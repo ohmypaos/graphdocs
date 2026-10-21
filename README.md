@@ -26,9 +26,19 @@ Built for small and solo projects: short → try → fail → fix, with no pages
 
 Requires Node.js 18+.
 
+In Claude Code:
+
+```
+/plugin install graphdocs --marketplace ohmypaos/graphdocs
+```
+
+Or from a terminal: `claude plugin install graphdocs --marketplace ohmypaos/graphdocs`.
+
+For local development:
+
 ```bash
-git clone <this repo> graphdocs
-claude --plugin-dir /path/to/graphdocs
+git clone https://github.com/ohmypaos/graphdocs.git
+claude --plugin-dir ./graphdocs
 ```
 
 ## Use

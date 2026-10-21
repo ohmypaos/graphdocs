@@ -28,28 +28,28 @@
 
 Each node is exactly **one** of:
 
-| Type | Icon | Example |
+| Type | Shown as | Example |
 |---|---|---|
-| `actor` | 👤 | User, Admin, Payment gateway |
-| `action` | ⚙ | Enter email/password |
-| `result` | ◎ | Dashboard shown |
+| `actor` | pill with avatar | User, Admin, Payment gateway |
+| `action` | card, thick left border | Enter email/password |
+| `result` | card | Dashboard shown |
 
-Nodes are fine-grained (an action, never a whole feature).
+Nodes are fine-grained (an action, never a whole feature). **Actors are shared** across features: one node per real actor, no `feature`.
 
 | Field | Meaning |
 |---|---|
 | `id` | Feature slug, unique: `auth.login-google` |
-| `no` | Stable number shown as `#12`, for talking about a node. The CLI assigns it incrementally and never reuses one. Search and deep links accept it |
+| `no` | Stable number shown as `#12`, for talking about a node. The CLI assigns it incrementally and never reuses one. Deep links accept it |
 | `type` | `actor` · `action` · `result` |
 | `label` | Short name |
-| `note` | Optional one-line subtitle shown on the card |
-| `feature` | Path: `Sales/Order/Payment`. Each feature is one section |
+| `note` | Optional extra info, shown in the detail panel only |
+| `feature` | Path: `Sales/Order/Payment`. Each feature is one section. Not set on actors |
 | `status` | See below |
 | `code` | File/symbol links: `src/api/auth.ts#login` |
 | `rules` | Only constraints that can't be drawn as an edge (1–2 lines) |
-| `links` | Cross-links to nodes in other features |
+| `links` | Extra cross-links to other nodes (panel) |
 | `level` | Detail level the node was planned at (default: `meta.level`) |
-| `plan` | Draft plan id, while not yet merged |
+| `plan` | Plan id (`p-<slug>`, imports `p-import-<slug>`) until merged |
 | `form` | Action only: the form it submits (`form.login`) |
 | `data` | Action only: entities it reads/writes (`["users", "sessions"]`) |
 | `message` | Result only: message code shown to the user (`ERR_LOGIN_FAILED`) |
@@ -66,17 +66,17 @@ Nodes are fine-grained (an action, never a whole feature).
 | (from an actor) | thin, gray |
 
 ```
-👤 User ─▶ ⚙ Enter email/pass ─[correct]──────▶ ◎ Dashboard
-                              ├─[wrong, < 5]──▶ ◎ Show error
-                              └─[wrong, ≥ 5]──▶ ◎ Lock 15 min
+(User) ─▶ [Enter email/pass] ─(correct)──────▶ [Dashboard]
+                             ┄(wrong, < 5)┄┄┄▶ [Show error]
+                             ┄(wrong, ≥ 5)┄┄┄▶ [Lock 15 min]
 ```
 
 ### Sections (no zoom)
 
 - No group nodes, no zoom. **One section per feature**, which can be collapsed.
 - The parent path is written **once** as a group heading. Each sub-feature is a soft rounded block under it, titled with its own name only, so there is no repeated prefix. (A left menu was tried and dropped: little value.)
-- An actor appears in every section where it acts.
-- An edge to another feature is not drawn. The card shows a link instead (`→ Pick item`, `← Home`) that jumps to it.
+- A shared actor is drawn in every section where it acts.
+- An edge to another feature is not drawn. The card shows a reference instead (`→ #12`, `← #4`, tooltip = name) that jumps to it.
 
 ```
 ACCOUNT
@@ -123,7 +123,7 @@ The flow alone isn't enough to build from. Three more parts, linked to the flow,
 ```
 
 - Forms and entities have `status` and `plan` like nodes. A plan drafts its form/DB changes too.
-- The viewer resolves message codes, so text shows inline (code in small print).
+- Cards show only the message **code**. The text is in the panel, the Messages tab and the code's tooltip.
 
 ### Status
 
@@ -154,7 +154,8 @@ Status is shown **by background color only** (no icons). It is the only thing th
 ## 4. Workflow
 
 ```
- INIT    brainstorm (idea, actors, features, level, lang, test cmd) ─▶ skeleton graph
+ INIT    new project: brainstorm (idea, actors, features, level, lang, test) ─▶ skeleton (drafts)
+ IMPORT  existing code: scan ─▶ user picks features ─▶ current flows as `review` ─▶ REPORT
    │
    ▼
  PLAN    brainstorm (choices + recommendation) ─▶ draft branch     ◀── user answers
@@ -164,23 +165,25 @@ Status is shown **by background color only** (no icons). It is the only thing th
    │       └─ still failing ─▶ report error + cause + 2–3 options
    ▼
  REPORT  3–5 lines + graph link                                    ◀── user "ok"?
-   ├─ ok             ─▶ merge draft into graph ─▶ regen md ─▶ commit
+   ├─ ok             ─▶ status done ─▶ merge ─▶ one commit
    ├─ small fix      ─▶ fix directly ─▶ REPORT
-   └─ changes reqs   ─▶ PLAN (1–2 questions) ─▶ update draft
+   ├─ changes reqs   ─▶ PLAN (1–2 questions) ─▶ update the same draft
+   └─ drop           ─▶ gd discard (+ git revert of its code)
 ```
 
 - **Init:** brainstorm, then a skeleton graph: main flows only, at the default level. Asks for the docs language (`en` / `vi`), the default level, and the test command (detected, then confirmed).
-- **Plan:** the draft attaches to its parent node in the main graph. Answering the brainstorm counts as approving the requirements.
-- **Build:** writes tests per conditional branch, at the plan's level. Updates status and code links as it goes.
+- **Plan:** id `p-<slug>`, drawn with one `gd apply` (new and changed items get `plan` + `draft`). Answering the questions counts as approving the requirements; build starts right away.
+- **Build:** `status doing plan:<id>`, code, `code=` links on nodes, one test per conditional branch at the plan's level, then `status review plan:<id>`.
 - **Report format:**
   ```
   ✅ Login Google: 4 nodes, 3 files
   🧪 Tests: 6/6 pass
   👆 Try by hand: "Sign in with Google" button on mobile
-  🗺 .graphdocs/index.html#auth.login-google
+  🗺 .graphdocs/index.html#7
   → 'ok' to make it official
   ```
-- **Commit after "ok":** one commit with code + `.graphdocs/`, message derived from the plan. **No `Co-Authored-By` or any attribution trailer.**
+- **Commit after "ok":** one commit with code + `.graphdocs/`, message derived from the plan (`feat(...)`; imports: `docs(graphdocs): import …`, `.graphdocs/` only). **No `Co-Authored-By` or any attribution trailer.**
+- Each step skill ends by **invoking** the next one (plan → build → report); the router picks the step from `gd state`.
 
 ## 5. Viewer
 
@@ -211,14 +214,16 @@ Status is shown **by background color only** (no icons). It is the only thing th
 ```
 
 - A single self-contained file that works offline. Data is embedded because `file://` blocks `fetch()` of sibling JSON.
-- Graph JSON = `{ meta: { title, lang, level }, nodes, edges, forms, entities, messages }`. The CLI copies `meta` from config, since the viewer can't read `config.json`.
-- Prototype: `viewer/index.html` (sample data embedded).
-- `graph.md` is an edge list per feature (status, code link, form, data, message), followed by compact Forms, Entities and Messages tables:
+- Graph JSON = `{ meta: { title, lang, level, nextNo }, nodes, edges, forms, entities, messages }`. The CLI copies title/lang/level from config, since the viewer can't read `config.json`.
+- Template: `viewer/index.html` (with sample data). `gd init` copies it and replaces the data; `gd upgrade` refreshes the viewer code and keeps the data.
+- `graph.md`: summary line, actors, then per feature its nodes and `flow:` edges, then Forms, Entities, Messages:
   ```
-  ## Auth (level 1)
-  - 👤user → ⚙auth.login                      ✓ src/api/auth.ts
-  - ⚙auth.login →[correct]→ ◎auth.dashboard   ✓
-  - ⚙auth.login →[wrong]→ ◎auth.error         ◐
+  level 2 · lang vi · draft 0 · doing 0 · review 2 · done 9 · open plans: p-x
+  ## Account › Login · level 2
+  - #6 auth.login · action · done · "Login" · form=form.login · data=users · code=src/routes/auth.js#login
+  - #8 auth.login.wrong · result · done · "Wrong password" · message=auth.wrong
+  flow:
+  - auth.login →[wrong password | fail] auth.login.wrong
   ```
 - All output text is in the language set by `config.lang`, and stays short.
 
@@ -226,18 +231,22 @@ Status is shown **by background color only** (no icons). It is the only thing th
 
 ```
 graphdocs/
-├─ .claude-plugin/plugin.json
+├─ .claude-plugin/
+│  ├─ plugin.json        manifest (MIT)
+│  └─ marketplace.json   marketplace "ohmypaos" listing this plugin
 ├─ skills/
-│  ├─ graphdocs/    router: reads graph state → invokes the right step
-│  ├─ gd-init/       new project
-│  ├─ gd-import/     existing codebase
+│  ├─ graphdocs/         router + shared rules + graph JSON shape
+│  ├─ gd-init/           new project
+│  ├─ gd-import/         existing codebase
 │  ├─ gd-plan/
 │  ├─ gd-build/
-│  └─ gd-report/    each step ends with "next: …"
-├─ scripts/gd.js    CLI, the only way to modify the graph
-├─ scripts/hooks.js SessionStart + PreToolUse handlers
+│  └─ gd-report/         each step invokes the next
+├─ scripts/gd.js         CLI, the only way to modify the graph
+├─ scripts/hooks.js      SessionStart + PreToolUse handlers
 ├─ hooks/hooks.json
-└─ viewer/          index.html template (no dependencies)
+├─ viewer/index.html     viewer template (no dependencies)
+├─ README.md · LICENSE
+└─ DESIGN.md · CLAUDE.md repo-only (not loaded by the plugin)
 ```
 
 ### CLI (`node scripts/gd.js …`, full list: `gd help`)
@@ -252,30 +261,38 @@ gd form field form.login email type=email required=true maps=users.email 'rules=
 gd entity col users email type=text required=true key=unique
 gd msg ERR_EMAIL "Invalid email"
 gd apply plan.json            # bulk upsert { nodes, edges, forms, entities, messages }, used to draft a plan
-gd merge p1 | gd discard p1
+gd merge p1 | gd discard p1 [--all]
 gd check | gd md | gd upgrade
 ```
 
-- Every write validates. **Errors block the write** (bad id/type, dangling edge, duplicates). **Warnings** (unknown form/entity/message, empty form) are allowed while building, counted in one line, listed by `gd check`.
+- Every write validates. **Errors block the write**: bad id/type/status/kind, dangling edge, duplicates, and **any unknown key** (the message lists the allowed keys, so a wrong guess like `cols` fails loudly). **Warnings** (unknown form/entity/message, empty form, actor with a `feature`) are allowed while building, counted in one line, listed by `gd check`.
 - Then it writes the JSON block into `index.html` and regenerates `graph.md`.
 - `no` is assigned from `meta.nextNo` and never reused.
-- `discard` removes only brand-new drafts of the plan. Existing items it touched just lose the tag (revert those with git).
+- `kind: ok` is the default and never stored.
+- `discard` removes only brand-new drafts of the plan; existing items it touched just lose the tag (revert those with git). `--all` removes every item of the plan (imports).
+- Call it literally as `node "<path>/gd.js" …`: no `gd` shell function/alias (clashes with a common git alias), no `$VAR` holding the command (zsh doesn't split it).
 
 ### Hooks
 
 | Hook | Effect |
 |---|---|
-| `SessionStart` | If `.graphdocs/` exists, inject one line of state: "1 plan awaiting ok, 2 nodes doing" |
-| `PreToolUse` (Edit/Write) | Block direct edits under `.graphdocs/`; use the CLI |
+| `SessionStart` | Always: the CLI path + how to call it. With `.graphdocs/`: the `gd state` line + "route every change through the graphdocs skill" |
+| `PreToolUse` (Edit · Write · MultiEdit · NotebookEdit) | Exit 2 on any path under `.graphdocs/`, pointing to the CLI |
 
-## 8. Conventions
+## 8. Install
+
+- Repo: `github.com/ohmypaos/graphdocs` (branch `main`).
+- `/plugin install graphdocs --marketplace ohmypaos/graphdocs` (or `claude plugin install …` from a terminal).
+- Local dev: `claude --plugin-dir <repo>`. Requires Node.js 18+.
+
+## 9. Conventions
 
 - Skills, scripts and plugin code are in **English**.
 - Generated docs are in **English or Vietnamese**, chosen at init.
 - Everything (skills, labels, reports) is **very short and clear**. No full pages of prose.
 - Commits carry **no co-author or attribution lines**.
 
-## 9. Scope
+## 10. Scope
 
 | Start | Skill |
 |---|---|
@@ -284,4 +301,4 @@ gd check | gd md | gd upgrade
 
 Import documents what the code does today; changes still go through gd-plan. Unpicked features can be imported later.
 
-Out of scope: editing inside the HTML, filters, minimap.
+Out of scope for now: editing inside the HTML, search, filters, plan overlay, minimap.

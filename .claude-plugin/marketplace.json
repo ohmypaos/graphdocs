@@ -1,0 +1,14 @@
+{
+  "name": "ohmypaos",
+  "owner": { "name": "Paos" },
+  "description": "Plugins by Paos: GraphDocs, project docs as one visual graph.",
+  "plugins": [
+    {
+      "name": "graphdocs",
+      "source": "./",
+      "description": "Project docs as one visual graph (HTML). Plan → build → report workflow where the graph leads the code.",
+      "version": "0.1.0",
+      "license": "MIT"
+    }
+  ]
+}
