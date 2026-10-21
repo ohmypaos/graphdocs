@@ -7,7 +7,7 @@
 <style>
   :root {
     --bg: #f7f7f5; --surface: #ffffff; --text: #1f2328; --muted: #6b7280; --border: #e3e4e8;
-    --accent: #6d5bd0; --fail: #9ca3af; --nav: #b6bac2; --actor-line: #d0d3d9; --impact: #f97316;
+    --accent: #6d5bd0; --fail: #9ca3af; --nav: #b6bac2; --actor-line: #d0d3d9;
     --chip: #ffffff; --msg: #b4236c;
     --s-draft-bg: #f3f4f6;  --s-draft-bd: #a3a8b1;
     --s-doing-bg: #eaf1ff;  --s-doing-bd: #9db8f2;
@@ -17,7 +17,7 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #15161b; --surface: #1d1f26; --text: #e8e8ec; --muted: #9a9caa; --border: #2e313b;
-      --accent: #9d8cf0; --fail: #7c8090; --nav: #5d6170; --actor-line: #3d404c; --impact: #fb923c;
+      --accent: #9d8cf0; --fail: #7c8090; --nav: #5d6170; --actor-line: #3d404c;
       --chip: #1d1f26; --msg: #f28bbd;
       --s-draft-bg: #23252d;  --s-draft-bd: #5d6170;
       --s-doing-bg: #1c2740;  --s-doing-bd: #3f5f9e;
@@ -27,7 +27,7 @@
   }
   :root[data-theme="dark"] {
     --bg: #15161b; --surface: #1d1f26; --text: #e8e8ec; --muted: #9a9caa; --border: #2e313b;
-    --accent: #9d8cf0; --fail: #7c8090; --nav: #5d6170; --actor-line: #3d404c; --impact: #fb923c;
+    --accent: #9d8cf0; --fail: #7c8090; --nav: #5d6170; --actor-line: #3d404c;
     --chip: #1d1f26; --msg: #f28bbd;
     --s-draft-bg: #23252d;  --s-draft-bd: #5d6170;
     --s-doing-bg: #1c2740;  --s-doing-bd: #3f5f9e;
@@ -50,8 +50,6 @@
   input, button { font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; }
   button { cursor: pointer; }
-  button.on { border-color: var(--impact); color: var(--impact); }
-  #search { width: 200px; max-width: 45vw; }
   nav.tabs { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
   nav.tabs button { border: 0; background: none; border-radius: 6px; padding: 3px 12px; color: var(--muted); }
   nav.tabs button.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
@@ -106,7 +104,6 @@
   .node .av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
     background: var(--bg); border: 1px solid var(--border); }
   .focus { box-shadow: 0 0 0 3px var(--accent) !important; }
-  .node.affected { box-shadow: 0 0 0 2px var(--impact); }
   .chip { position: absolute; height: 22px; line-height: 20px; padding: 0 9px; border-radius: 11px; font-size: 12px;
     white-space: nowrap; background: var(--chip); border: 1px solid var(--border); color: var(--text); }
   .chip.fail { color: var(--muted); }
@@ -164,8 +161,6 @@
 <header>
   <h1 id="title">GraphDocs</h1>
   <nav class="tabs" id="tabs"></nav>
-  <input id="search" type="search" autocomplete="off">
-  <span id="plans"></span>
   <div class="legend" id="legend"></div>
 </header>
 <main id="main">
@@ -315,7 +310,7 @@
 
   const I18N = {
     vi: {
-      search: 'Tìm…', plan: 'Nháp', notFound: 'Không tìm thấy',
+      notFound: 'Không tìm thấy',
       tabs: { flow: 'Luồng', forms: 'Form', data: 'Dữ liệu', messages: 'Message' },
       type: { actor: 'Tác nhân', action: 'Hành động', result: 'Kết quả' },
       status: { draft: 'nháp', doing: 'đang làm', review: 'chờ xác nhận', done: 'xong' },
@@ -326,7 +321,7 @@
            required: 'bắt buộc', placeholder: 'gợi ý nhập', def: 'mặc định', usedBy: 'Dùng bởi:', code: 'Mã', text: 'Nội dung' },
     },
     en: {
-      search: 'Search…', plan: 'Draft', notFound: 'Not found',
+      notFound: 'Not found',
       tabs: { flow: 'Flow', forms: 'Forms', data: 'Data', messages: 'Messages' },
       type: { actor: 'Actor', action: 'Action', result: 'Result' },
       status: { draft: 'draft', doing: 'doing', review: 'review', done: 'done' },
@@ -507,10 +502,9 @@
       });
       canvas.insertAdjacentHTML('afterbegin', `<svg width="${L.width}" height="${L.height}">${es.map(x => x.path).join('')}</svg>${es.map(x => x.chip).join('')}`);
     });
-    applyOverlay();
   }
 
-  // hover a node → its flow; plan overlay
+  // hover a node → highlight its flow
   function flowOf(id) {
     const keep = new Set([id]);
     const walk = (cur, dir) => G.edges.forEach(e => {
@@ -529,33 +523,15 @@
     });
   }
 
-  let overlay = null, overlayKeep = null;
-  function applyOverlay() {
-    flowPane.querySelectorAll('.node').forEach(el => el.classList.remove('affected'));
-    overlayKeep = null;
-    if (overlay) {
-      const draft = new Set(G.nodes.filter(n => n.plan === overlay).map(n => n.id));
-      const affected = new Set();
-      G.edges.forEach(e => {
-        if (draft.has(e.from) && !draft.has(e.to)) affected.add(e.to);
-        if (draft.has(e.to) && !draft.has(e.from)) affected.add(e.from);
-      });
-      overlayKeep = new Set([...draft, ...affected]);
-      flowPane.querySelectorAll('.node').forEach(el => el.classList.toggle('affected', affected.has(el.dataset.id) && byId.get(el.dataset.id).type !== 'actor'));
-    }
-    dimExcept(overlayKeep);
-    renderPlans();
-  }
-
   flowPane.addEventListener('mouseover', e => {
     const el = e.target.closest('.node');
-    if (el && !overlay) dimExcept(flowOf(el.dataset.id));
+    if (el) dimExcept(flowOf(el.dataset.id));
   });
   flowPane.addEventListener('mouseout', e => {
-    if (e.target.closest('.node') && !e.relatedTarget?.closest?.('.node')) dimExcept(overlayKeep);
+    if (e.target.closest('.node') && !e.relatedTarget?.closest?.('.node')) dimExcept(null);
   });
 
-  // ================= SCREENS =================
+  // ================= FORMS =================
   const formsPane = document.getElementById('pane-forms');
   function renderForms() {
     formsPane.innerHTML = `<div class="grid">${G.forms.filter(sc => sc.fields?.length).map(sc => {
@@ -645,7 +621,6 @@
     TABS.forEach(x => { document.getElementById('pane-' + x).hidden = x !== t; });
     tabsEl.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
     document.getElementById('legend').style.visibility = t === 'flow' ? 'visible' : 'hidden';
-    document.getElementById('plans').style.display = t === 'flow' ? '' : 'none';
   }
   tabsEl.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
 
@@ -714,35 +689,6 @@
   document.getElementById('close').onclick = () => { panel.classList.remove('show'); document.querySelectorAll('.focus').forEach(n => n.classList.remove('focus')); };
 
   // ---------- header ----------
-  const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').toLowerCase();
-  const search = document.getElementById('search');
-  search.placeholder = T.search;
-  search.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' || !search.value.trim()) return;
-    const q = fold(search.value.trim());
-    if (/^#?\d+$/.test(q) && target(q)) return focusAny(q);
-    const hit = [...G.nodes, ...G.forms, ...G.entities].find(n => fold(n.label || '').includes(q) || fold(n.id).includes(q))
-      || Object.keys(G.messages).find(k => fold(k).includes(q) || fold(G.messages[k]).includes(q));
-    hit ? focusAny(hit.id || hit) : toast(T.notFound);
-  });
-
-  const plans = [...new Set(G.nodes.filter(n => n.plan).map(n => n.plan))];
-  const plansEl = document.getElementById('plans');
-  function renderPlans() {
-    plansEl.innerHTML = plans.map(p => `<button data-plan="${esc(p)}" class="${overlay === p ? 'on' : ''}">✎ ${T.plan} ${esc(p)}</button>`).join(' ');
-  }
-  plansEl.addEventListener('click', e => {
-    const b = e.target.closest('[data-plan]');
-    if (!b) return;
-    overlay = overlay === b.dataset.plan ? null : b.dataset.plan;
-    applyOverlay();
-    if (overlay) {
-      const first = flowPane.querySelector(`.node[data-id="${CSS.escape(G.nodes.find(n => n.plan === overlay).id)}"]`);
-      first.closest('details').open = true;
-      first.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-  });
-
   document.getElementById('legend').innerHTML =
     `<span><i></i>${T.kind.ok}</span><span><i class="fail"></i>${T.kind.fail}</span><span><i class="nav"></i>${T.kind.nav}</span>` +
     ['draft', 'doing', 'review', 'done'].map(s => `<span><b style="background:var(--s-${s}-bg);border-color:var(--s-${s}-bd)"></b>${T.status[s]}</span>`).join('');
@@ -761,8 +707,6 @@
   const openHash = () => {
     const id = decodeURIComponent(location.hash.slice(1));
     if (!id) return;
-    const nid = byNo.get(id.replace('#', '')) || id;
-    if (byId.get(nid)?.plan) { overlay = byId.get(nid).plan; applyOverlay(); }
     focusAny(id);
   };
   window.addEventListener('hashchange', openHash);

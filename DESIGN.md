@@ -196,9 +196,9 @@ Status is shown **by background color only** (no icons). It is the only thing th
 | Sections | Parent feature = group heading (once). Sub-feature = card in 2 parts: header (chevron, name, level badge, done count) and flow, split by a dashed line. Collapsed shows the header only |
 | Hover | Highlights the flow through the node, dims the rest |
 | Details | Click → side panel (rules, code, links, level, from / leads to) |
-| Draft / impact | Plan button: draft + affected nodes (orange ring) stay, rest dimmed |
-| Deep link | `#<node-id>` opens the section, scrolls to the node, opens the panel (used by reports) |
-| Tools | Node search only |
+| Draft | Shown by status color only (gray, dashed). No plan filter/overlay for now |
+| Deep link | `#<node-id>` or `#<no>` opens the right tab/section, scrolls to the item, opens the panel (used by reports) |
+| Tools | None for now: no search, no filters (add later if needed) |
 | Reference | Style follows the "Đăng nhập & Đăng ký" design the user shared |
 
 ## 6. Output: `.graphdocs/` in the user's project
@@ -238,16 +238,26 @@ graphdocs/
 └─ viewer/          index.html template (no dependencies)
 ```
 
-### CLI (`node scripts/gd.js …`)
+### CLI (`node scripts/gd.js …`, full list: `gd help`)
 
 ```
-gd node add  --type action --label "Login Google" --feature "Auth" --plan p1
-gd link      auth.login auth.login-google --when "valid token"
-gd status    auth.login-google done
-gd merge     p1
+gd init --title T --lang vi --level 1 --test "npm test"
+gd state                      # one line: counts, open plans, next step (for hooks + router)
+gd node add auth.google type=action label="Login Google" feature=Auth/Login plan=p1 form=form.login
+gd link auth.google auth.home when="valid token"        # kind=fail|nav
+gd status review auth.google '#6'                       # ids or #numbers
+gd form field form.login email type=email required=true maps=users.email 'rules=[{"rule":"email","msg":"ERR_EMAIL"}]'
+gd entity col users email type=text required=true key=unique
+gd msg ERR_EMAIL "Invalid email"
+gd apply plan.json            # bulk upsert { nodes, edges, forms, entities, messages }, used to draft a plan
+gd merge p1 | gd discard p1
+gd check | gd md | gd upgrade
 ```
 
-Every command validates the schema, writes the JSON block into `index.html`, and regenerates `graph.md`.
+- Every write validates. **Errors block the write** (bad id/type, dangling edge, duplicates). **Warnings** (unknown form/entity/message, empty form) are allowed while building, counted in one line, listed by `gd check`.
+- Then it writes the JSON block into `index.html` and regenerates `graph.md`.
+- `no` is assigned from `meta.nextNo` and never reused.
+- `discard` removes only brand-new drafts of the plan. Existing items it touched just lose the tag (revert those with git).
 
 ### Hooks
 
