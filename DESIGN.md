@@ -234,7 +234,8 @@ graphdocs/
 │  ├─ gd-build/
 │  └─ gd-report/    each step ends with "next: …"
 ├─ scripts/gd.js    CLI, the only way to modify the graph
-├─ hooks/
+├─ scripts/hooks.js SessionStart + PreToolUse handlers
+├─ hooks/hooks.json
 └─ viewer/          index.html template (no dependencies)
 ```
 
@@ -245,7 +246,7 @@ gd init --title T --lang vi --level 1 --test "npm test"
 gd state                      # one line: counts, open plans, next step (for hooks + router)
 gd node add auth.google type=action label="Login Google" feature=Auth/Login plan=p1 form=form.login
 gd link auth.google auth.home when="valid token"        # kind=fail|nav
-gd status review auth.google '#6'                       # ids or #numbers
+gd status review auth.google '#6'                       # ids, #numbers or plan:<id>
 gd form field form.login email type=email required=true maps=users.email 'rules=[{"rule":"email","msg":"ERR_EMAIL"}]'
 gd entity col users email type=text required=true key=unique
 gd msg ERR_EMAIL "Invalid email"

@@ -14,6 +14,16 @@ const KINDS = ['ok', 'fail', 'nav'];
 const KEYS = ['pk', 'fk', 'unique'];
 const LISTS = ['data', 'code', 'links', 'rules'];
 const ID = /^[a-z0-9][a-z0-9_-]*(\.[a-z0-9_-]+)*$/;
+// allowed keys: an unknown key is an error, so a wrong guess (e.g. "cols") fails loudly
+const SCHEMA = {
+  node: ['id', 'no', 'type', 'label', 'note', 'feature', 'status', 'level', 'plan', 'form', 'data', 'message', 'code', 'rules', 'links'],
+  edge: ['from', 'to', 'when', 'kind'],
+  form: ['id', 'label', 'status', 'level', 'plan', 'fields'],
+  field: ['name', 'label', 'type', 'required', 'rules', 'maps', 'placeholder', 'default', 'hint'],
+  rule: ['rule', 'msg'],
+  entity: ['id', 'label', 'status', 'level', 'plan', 'columns'],
+  column: ['name', 'type', 'required', 'key', 'ref', 'default', 'note', 'index'],
+};
 
 const USAGE = `gd <command>
 
@@ -29,7 +39,7 @@ const USAGE = `gd <command>
   node rm <id|#no>                       also removes its edges
   link <from> <to> [when=..] [kind=ok|fail|nav]
   unlink <from> <to>
-  status <draft|doing|review|done> <id|#no>...
+  status <draft|doing|review|done> <id|#no|plan:<id>>...
 
   form set <id> key=value...             label= status= level= plan=
   form field <form> <name> key=value...  label= type= required= maps= placeholder= default= hint=
@@ -123,6 +133,26 @@ const nextNo = g => {
 // ---------- validation ----------
 function validate(g) {
   const errors = [], warnings = [];
+  const keys = (kind, o, at) => {
+    const bad = Object.keys(o || {}).filter(k => !SCHEMA[kind].includes(k));
+    if (bad.length) errors.push(`${at}: unknown key ${bad.join(', ')} (allowed: ${SCHEMA[kind].join(', ')})`);
+  };
+  for (const n of g.nodes) keys('node', n, `node ${n.id}`);
+  for (const e of g.edges) keys('edge', e, `edge ${e.from} → ${e.to}`);
+  for (const f of g.forms) {
+    keys('form', f, `form ${f.id}`);
+    if (f.fields && !Array.isArray(f.fields)) errors.push(`form ${f.id}: fields must be an array`);
+    for (const fd of Array.isArray(f.fields) ? f.fields : []) {
+      keys('field', fd, `form ${f.id}.${fd.name}`);
+      for (const r of fd.rules || []) keys('rule', r, `form ${f.id}.${fd.name} rule`);
+    }
+  }
+  for (const en of g.entities) {
+    keys('entity', en, `entity ${en.id}`);
+    if (en.columns && !Array.isArray(en.columns)) errors.push(`entity ${en.id}: columns must be an array`);
+    for (const c of Array.isArray(en.columns) ? en.columns : []) keys('column', c, `entity ${en.id}.${c.name}`);
+  }
+  if (errors.length) return { errors, warnings };
   const ids = new Map(), nos = new Map();
   const forms = new Map(g.forms.map(f => [f.id, f]));
   const ents = new Map(g.entities.map(e => [e.id, e]));
@@ -241,7 +271,8 @@ function state(g) {
   const items = g.nodes.filter(n => n.type !== 'actor');
   const by = s => items.filter(n => (n.status || 'draft') === s);
   const plans = [...new Set(items.map(n => n.plan).filter(Boolean))];
-  const parts = [`${items.length} nodes`, ...STATUSES.map(s => `${by(s).length} ${s}`)];
+  const actors = g.nodes.length - items.length;
+  const parts = [`${items.length} nodes${actors ? ` (+${actors} actor${actors > 1 ? 's' : ''})` : ''}`, ...STATUSES.map(s => `${by(s).length} ${s}`)];
   if (plans.length) parts.push(`plans: ${plans.join(', ')}`);
   const next = by('review').length ? 'report: waiting for the user to confirm (ok)'
     : by('doing').length ? 'build: resume ' + by('doing').map(n => '#' + n.no).join(' ')
@@ -348,7 +379,6 @@ function main(argv) {
     case 'link': {
       const from = nodeId(g, sub), to = nodeId(g, rest[0]);
       const e = assign({ from, to }, rest.slice(1));
-      if (e.kind === 'ok') delete e.kind;
       upsertEdge(g, e);
       return write(`linked ${from} → ${to}`);
     }
@@ -359,9 +389,14 @@ function main(argv) {
     }
     case 'status': {
       if (!STATUSES.includes(sub)) fail(`status must be ${STATUSES.join('|')}`);
-      if (!rest.length) fail('status needs node ids');
-      for (const r of rest) g.nodes.find(n => n.id === nodeId(g, r)).status = sub;
-      return write(`${rest.length} node(s) → ${sub}`);
+      if (!rest.length) fail('status needs node ids or plan:<id>');
+      // plan:<id> selects every node, form and entity of that plan
+      const items = rest.flatMap(r => r.startsWith('plan:')
+        ? [...g.nodes, ...g.forms, ...g.entities].filter(x => x.plan === r.slice(5))
+        : [g.nodes.find(n => n.id === nodeId(g, r))]);
+      if (!items.length) fail('nothing selected');
+      for (const x of items) x.status = sub;
+      return write(`${items.length} item(s) → ${sub}`);
     }
 
     case 'form': {
@@ -438,6 +473,7 @@ function main(argv) {
 
 function upsertEdge(g, e) {
   clean(e);
+  if (e.kind === 'ok') delete e.kind;
   const cur = g.edges.find(x => x.from === e.from && x.to === e.to);
   if (cur) { Object.assign(cur, e); for (const k of ['when', 'kind']) if (!(k in e)) delete cur[k]; }
   else g.edges.push(e);
