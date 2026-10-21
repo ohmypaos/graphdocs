@@ -9,3 +9,4 @@
 - **Don't over-engineer.** Build only what DESIGN.md calls for. Don't pad with edge cases the chosen level doesn't ask for.
 - **Clarifying with the user:** one question at a time, multiple choice, one recommended option with a short reason.
 - **Commits:** never add `Co-Authored-By` or any attribution or "generated with" line. This applies to commits in this repo and to commits the plugin makes.
+- **Releases:** follow DESIGN.md › Release (bump `version` in plugin.json → tag `graphdocs--vX.Y.Z` → GitHub release). Pushing without a bump does not reach users.

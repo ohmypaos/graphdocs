@@ -285,6 +285,17 @@ gd check | gd md | gd upgrade
 - `/plugin install graphdocs --marketplace ohmypaos/graphdocs` (or `claude plugin install …` from a terminal).
 - Local dev: `claude --plugin-dir <repo>`. Requires Node.js 18+.
 
+### Release
+
+Users only get a new copy when `version` changes (pushing commits alone does nothing).
+
+1. Bump `version` (semver) in `.claude-plugin/plugin.json` only, never in `marketplace.json`.
+2. Commit `release: vX.Y.Z`, push `main`.
+3. Tag `graphdocs--vX.Y.Z` (the tag form plugin dependencies resolve against), push the tag.
+4. GitHub release on that tag with 3–5 short lines of changes.
+
+Users update via auto-update (if they turned it on) or `/plugin marketplace update ohmypaos`.
+
 ## 9. Conventions
 
 - Skills, scripts and plugin code are in **English**.
