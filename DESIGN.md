@@ -229,7 +229,8 @@ graphdocs/
 ├─ .claude-plugin/plugin.json
 ├─ skills/
 │  ├─ graphdocs/    router: reads graph state → invokes the right step
-│  ├─ gd-init/
+│  ├─ gd-init/       new project
+│  ├─ gd-import/     existing codebase
 │  ├─ gd-plan/
 │  ├─ gd-build/
 │  └─ gd-report/    each step ends with "next: …"
@@ -276,8 +277,11 @@ gd check | gd md | gd upgrade
 
 ## 9. Scope
 
-| Now | Later |
+| Start | Skill |
 |---|---|
-| New projects | Bootstrap a graph from an existing codebase |
+| New project | **gd-init**: brainstorm → skeleton graph (drafts) |
+| Existing codebase | **gd-import**: scan → user picks features (multi-select per parent) → draw current flows, forms, tables, messages exactly as the code behaves, every action linked to code → status `review`, plan `p-import-<slug>` → short report with "unsure" points → user "ok" → done + merge + commit `.graphdocs/` only (`docs(graphdocs): import …`). Drop = `gd discard <id> --all` |
+
+Import documents what the code does today; changes still go through gd-plan. Unpicked features can be imported later.
 
 Out of scope: editing inside the HTML, filters, minimap.

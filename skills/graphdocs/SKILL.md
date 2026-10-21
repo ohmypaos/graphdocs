@@ -39,11 +39,12 @@ Upsert: nodes/forms/entities by `id`, edges by `from`+`to`, fields/columns by `n
 
 ## Route
 
-1. No `.graphdocs/` → **gd-init**.
+1. No `.graphdocs/` → repo already has app code: **gd-import** · empty/new project: **gd-init**.
 2. Else run `gd state`, then route on its `next →`:
 
 | State / user intent | Go to |
 |---|---|
+| "Document / import existing feature X" | **gd-import** |
 | `report: waiting…` and the user says ok / gives feedback | **gd-report** |
 | `build: resume …` or `build: drafts of …` | **gd-build** |
 | New request, change of direction, bug | **gd-plan** |

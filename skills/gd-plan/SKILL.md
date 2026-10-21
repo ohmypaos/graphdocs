@@ -32,6 +32,7 @@ Plan id: `p-<short-slug>` (e.g. `p-login-google`). Write one JSON file outside t
 ```
 
 - **Nodes**: one of actor / action / result, fine-grained (an action, not a feature). Conditions go on edges (`when`), `kind`: ok (default) · fail · nav.
+- Actors are shared across features (no `feature`): reuse existing ones, never duplicate.
 - New nodes: `plan` set, status draft (default). Existing nodes the plan changes: set `plan` and `status: "draft"` too.
 - Card text stays minimal: `label` short; extra info in `note`; user-facing text only as a `message` code.
 - **Forms** only for screens with input or validation: fields with type, required, rules → message code, `maps` → `entity.column`. Pure UI is not documented.

@@ -10,7 +10,7 @@ const CLI = path.join(__dirname, 'gd.js');
 const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 function sessionStart() {
-  const lines = [`GraphDocs CLI: node "${CLI}"`];
+  const lines = [`GraphDocs CLI: node "${CLI}" <args>  (run it literally: no gd function/alias, no $VAR holding the command)`];
   const html = path.join(projectDir, '.graphdocs', 'index.html');
   if (fs.existsSync(html)) {
     const { state } = require('./gd.js');

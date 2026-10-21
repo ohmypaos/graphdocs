@@ -28,10 +28,12 @@ Exactly this shape, in `config.json` → `lang`:
 | Changes flow or requirements | **gd-plan** with 1–2 questions, update the same draft, then gd-build |
 | Drop it | `gd discard <id>`, revert its code with git, confirm in 1 line |
 
+Import plans (`p-import-…`, from gd-import): feedback = fix the graph only, never the code. Drop = `gd discard <id> --all`.
+
 ## 3. Commit (on ok)
 
 - One commit: code + `.graphdocs/`.
-- Message from the plan: `feat(<feature>): <what>` (or fix/refactor).
+- Message from the plan: `feat(<feature>): <what>` (or fix/refactor). Import plans: `docs(graphdocs): import <features>`, `.graphdocs/` only.
 - **No `Co-Authored-By`, no attribution, no "generated with" line.**
 
 Confirm in 1 line. **Next:** wait for the next request → **gd-plan**.

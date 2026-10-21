@@ -53,7 +53,7 @@ const USAGE = `gd <command>
   apply <file.json|->                    upsert a partial graph:
                                          { nodes, edges, forms, entities, messages }
   merge <plan>                           draft items of the plan become official
-  discard <plan>                         drop the plan's draft items`;
+  discard <plan> [--all]                 drop the plan's draft items (--all: every item, for imports)`;
 
 // ---------- io ----------
 function findRoot(start = process.cwd()) {
@@ -169,6 +169,7 @@ function validate(g) {
     if (n.status && !STATUSES.includes(n.status)) errors.push(`${at}: status must be ${STATUSES.join('|')}`);
     if (n.level != null && ![1, 2, 3].includes(n.level)) errors.push(`${at}: level must be 1-3`);
     if (n.type !== 'actor' && !n.feature) errors.push(`${at}: feature required`);
+    if (n.type === 'actor' && n.feature) warnings.push(`${at}: actors are shared, drop feature`);
     if (n.form && n.type !== 'action') warnings.push(`${at}: form is for actions`);
     if (n.form && !forms.has(n.form)) warnings.push(`${at}: unknown form ${n.form}`);
     for (const d of n.data || []) if (!ents.has(d)) warnings.push(`${at}: unknown entity ${d}`);
@@ -457,8 +458,10 @@ function main(argv) {
     }
     case 'discard': {
       if (!sub) fail('discard needs a plan id');
-      // only brand-new drafts are removed; existing items the plan touched just lose the tag (revert those with git)
-      const drop = x => x.plan === sub && (x.status || 'draft') === 'draft';
+      // only brand-new drafts are removed; existing items the plan touched just lose the tag (revert those with git).
+      // --all removes every item of the plan (import plans: everything in them is new)
+      const all = rest.includes('--all');
+      const drop = x => x.plan === sub && (all || (x.status || 'draft') === 'draft');
       const gone = new Set(g.nodes.filter(drop).map(n => n.id));
       g.nodes = g.nodes.filter(n => !gone.has(n.id));
       g.edges = g.edges.filter(e => !gone.has(e.from) && !gone.has(e.to));

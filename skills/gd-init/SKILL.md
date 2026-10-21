@@ -7,6 +7,8 @@ description: GraphDocs step 0. Start GraphDocs in a new project - brainstorm the
 
 Rules from the **graphdocs** skill apply (CLI path, brevity, question style, no attribution).
 
+If the repo already has app code, use **gd-import** instead.
+
 ## 1. Brainstorm (one question at a time, AskUserQuestion, recommendation first)
 
 Ask only what you can't infer from the repo or the user's message:
