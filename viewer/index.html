@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphDocs</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1f2328; --muted: #6b7280; --border: #e3e4e8;
+    --accent: #6d5bd0; --fail: #9ca3af; --nav: #b6bac2; --actor-line: #d0d3d9; --impact: #f97316;
+    --chip: #ffffff; --msg: #b4236c;
+    --s-draft-bg: #f3f4f6;  --s-draft-bd: #a3a8b1;
+    --s-doing-bg: #eaf1ff;  --s-doing-bd: #9db8f2;
+    --s-review-bg: #fff5dc; --s-review-bd: #e9c46a;
+    --s-done-bg: #e8f6ed;   --s-done-bd: #8ccfa5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15161b; --surface: #1d1f26; --text: #e8e8ec; --muted: #9a9caa; --border: #2e313b;
+      --accent: #9d8cf0; --fail: #7c8090; --nav: #5d6170; --actor-line: #3d404c; --impact: #fb923c;
+      --chip: #1d1f26; --msg: #f28bbd;
+      --s-draft-bg: #23252d;  --s-draft-bd: #5d6170;
+      --s-doing-bg: #1c2740;  --s-doing-bd: #3f5f9e;
+      --s-review-bg: #33291a; --s-review-bd: #8a6d2a;
+      --s-done-bg: #1a3024;   --s-done-bd: #2f7a4f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15161b; --surface: #1d1f26; --text: #e8e8ec; --muted: #9a9caa; --border: #2e313b;
+    --accent: #9d8cf0; --fail: #7c8090; --nav: #5d6170; --actor-line: #3d404c; --impact: #fb923c;
+    --chip: #1d1f26; --msg: #f28bbd;
+    --s-draft-bg: #23252d;  --s-draft-bd: #5d6170;
+    --s-doing-bg: #1c2740;  --s-doing-bd: #3f5f9e;
+    --s-review-bg: #33291a; --s-review-bd: #8a6d2a;
+    --s-done-bg: #1a3024;   --s-done-bd: #2f7a4f;
+  }
+  * { box-sizing: border-box; }
+  /* thin, flat scrollbars */
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 16px; font-weight: 600; margin: 0 8px 0 0; }
+  input, button { font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; }
+  button { cursor: pointer; }
+  button.on { border-color: var(--impact); color: var(--impact); }
+  #search { width: 200px; max-width: 45vw; }
+  nav.tabs { display: flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  nav.tabs button { border: 0; background: none; border-radius: 6px; padding: 3px 12px; color: var(--muted); }
+  nav.tabs button.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .legend { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 22px; vertical-align: middle; margin-right: 4px; border-top: 2px solid var(--accent); }
+  .legend i.fail { border-top: 2px dashed var(--fail); }
+  .legend i.nav { border-top-color: var(--nav); }
+  .legend b { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid; }
+  main { padding: 8px 16px 64px; }
+  .pane[hidden] { display: none; }
+  a, .x { color: var(--accent); cursor: pointer; text-decoration: none; }
+  code, .code { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+  .req { color: var(--msg); font-weight: 700; }
+  .msg { color: var(--msg); }
+
+  /* a parent feature is written once as a group heading; each sub-feature is a soft block */
+  h2.grp { margin: 28px 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  details.sec { scroll-margin-top: calc(var(--hh, 53px) + 12px); }
+  /* section card: header | dashed divider | flow. Collapsed shows the header only */
+  details.sec { margin: 0 0 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+  details.sec > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+  details.sec > summary::-webkit-details-marker { display: none; }
+  details.sec > .scroll { border-top: 1px dashed var(--border); padding: 14px; }
+  summary .caret { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px;
+    color: var(--muted); transition: transform .15s, background .15s; }
+  summary:hover .caret { background: var(--bg); color: var(--text); }
+  details[open] > summary .caret { transform: rotate(90deg); }
+  summary h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 22px; }
+  summary .meta { color: var(--muted); font-size: 12px; }
+  .scroll { overflow-x: auto; padding: 14px 2px 6px; }
+  .canvas { position: relative; }
+  .canvas svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+
+  .st { border: 1px solid var(--s-draft-bd); background: var(--s-draft-bg); }
+  .st[data-status="draft"] { border-style: dashed; }
+  .st[data-status="doing"] { background: var(--s-doing-bg); border-color: var(--s-doing-bd); }
+  .st[data-status="review"] { background: var(--s-review-bg); border-color: var(--s-review-bd); }
+  .st[data-status="done"] { background: var(--s-done-bg); border-color: var(--s-done-bd); }
+
+  .node { position: absolute; width: 240px; padding: 8px 12px; border-radius: 10px; cursor: pointer;
+    transition: opacity .15s, box-shadow .15s; }
+  .node.action { border-left-width: 4px; }
+  .node.actor { background: var(--surface); border: 1px solid var(--border); border-radius: 28px;
+    display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; }
+  .node .t { font-weight: 600; display: flex; align-items: baseline; gap: 6px; }
+  .node .n { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .node .lk { font-size: 12px; line-height: 18px; margin-top: 3px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .node .ms { font-size: 12px; margin-top: 3px; }
+  .no { margin-left: auto; flex: none; font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+  .btn .no { margin-left: 4px; }
+  .node .av { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--bg); border: 1px solid var(--border); }
+  .focus { box-shadow: 0 0 0 3px var(--accent) !important; }
+  .node.affected { box-shadow: 0 0 0 2px var(--impact); }
+  .chip { position: absolute; height: 22px; line-height: 20px; padding: 0 9px; border-radius: 11px; font-size: 12px;
+    white-space: nowrap; background: var(--chip); border: 1px solid var(--border); color: var(--text); }
+  .chip.fail { color: var(--muted); }
+  .dim { opacity: .18; }
+  path.dim { opacity: .12; }
+  .lv { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; color: #fff; vertical-align: middle; }
+  .lv1 { background: #2f9e64; } .lv2 { background: #d9901a; } .lv3 { background: #d9483b; }
+
+  /* forms */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; padding-top: 16px; }
+  .card { border-radius: 12px; padding: 12px 14px; transition: box-shadow .15s; }
+  .card h3 { margin: 0 0 8px; font-size: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .card th { text-align: left; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 4px 6px; }
+  .card td { padding: 6px; border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent); vertical-align: top; }
+  .card td .sub { font-size: 12px; color: var(--muted); }
+  .card .acts { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+  .btn { display: inline-block; padding: 2px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+  .rule { display: block; }
+  .mc { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  /* data */
+  .ent { position: absolute; width: 280px; border-radius: 12px; padding: 10px 0 6px; }
+  .ent h3 { margin: 0 12px 6px; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+  .ent .row { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px; padding: 3px 12px; font-size: 13px; }
+  .ent .row .k { color: var(--muted); text-align: center; }
+  .ent .row .ty { color: var(--muted); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .ent .row .sub { grid-column: 2 / 4; font-size: 11px; color: var(--muted); margin-top: -2px; }
+  .ent .used { margin: 6px 12px 0; font-size: 12px; color: var(--muted); }
+  .row.focus { box-shadow: inset 3px 0 0 var(--accent) !important; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+  /* messages */
+  table.msgs { width: 100%; border-collapse: collapse; margin-top: 16px; background: var(--surface); border-radius: 10px; overflow: hidden; }
+  table.msgs th, table.msgs td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.msgs th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 500; }
+  table.msgs tr.focus { box-shadow: inset 3px 0 0 var(--accent) !important; }
+
+  #panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 10; width: 300px; max-width: 85vw;
+    background: var(--surface); border-left: 1px solid var(--border); padding: 14px 16px; overflow: auto;
+    transform: translateX(100%); transition: transform .15s; }
+  #panel.show { transform: none; }
+  #panel h2 { font-size: 16px; margin: 0 24px 10px 0; }
+  #panel .close { position: absolute; top: 10px; right: 10px; border: 0; background: none; font-size: 18px; }
+  #panel dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+  #panel dt { color: var(--muted); }
+  #panel dd { margin: 0; }
+  #panel h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 4px; }
+  #panel ul { margin: 0; padding-left: 16px; }
+  #toast { position: fixed; left: 50%; top: 60px; transform: translateX(-50%); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; display: none; z-index: 20; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">GraphDocs</h1>
+  <nav class="tabs" id="tabs"></nav>
+  <input id="search" type="search" autocomplete="off">
+  <span id="plans"></span>
+  <div class="legend" id="legend"></div>
+</header>
+<main id="main">
+  <section class="pane" id="pane-flow"></section>
+  <section class="pane" id="pane-forms" hidden></section>
+  <section class="pane" id="pane-data" hidden></section>
+  <section class="pane" id="pane-messages" hidden></section>
+</main>
+<aside id="panel"><button class="close" id="close">×</button><div id="panel-body"></div></aside>
+<div id="toast"></div>
+
+<!-- GRAPH DATA: source of truth. Written only by scripts/gd.js -->
+<script id="graph" type="application/json">
+{
+  "meta": { "title": "Shop mini", "lang": "vi", "level": 1 },
+  "nodes": [
+    { "id": "actor.customer", "no": 1, "type": "actor", "label": "Khách", "note": "Người mua hàng" },
+    { "id": "actor.admin", "no": 2, "type": "actor", "label": "Admin", "note": "Quản lý cửa hàng" },
+
+    { "id": "auth.enter-pass", "no": 3, "type": "action", "label": "Đăng nhập bằng email", "feature": "Tài khoản/Đăng nhập", "status": "done", "level": 2, "form": "form.login", "data": ["users", "sessions"], "code": ["src/api/auth.ts#login"] },
+    { "id": "auth.home", "no": 4, "type": "result", "label": "Vào trang chủ", "note": "Tạo phiên, lưu token 7 ngày", "feature": "Tài khoản/Đăng nhập", "status": "done", "level": 2, "message": "MSG_WELCOME" },
+    { "id": "auth.error", "no": 5, "type": "result", "label": "Báo lỗi đăng nhập", "feature": "Tài khoản/Đăng nhập", "status": "done", "level": 2, "message": "ERR_LOGIN_FAILED" },
+    { "id": "auth.lock", "no": 6, "type": "result", "label": "Khoá tài khoản 15 phút", "note": "Gửi email cảnh báo", "feature": "Tài khoản/Đăng nhập", "status": "doing", "level": 2, "message": "ERR_LOCKED", "rules": ["Tự mở khoá sau 15 phút"] },
+    { "id": "auth.login-google", "no": 7, "type": "action", "label": "Đăng nhập bằng Google", "note": "OAuth 2.0", "feature": "Tài khoản/Đăng nhập", "status": "draft", "plan": "p1", "level": 2, "form": "form.login", "data": ["users", "sessions"] },
+    { "id": "auth.google-error", "no": 8, "type": "result", "label": "Báo lỗi Google", "feature": "Tài khoản/Đăng nhập", "status": "draft", "plan": "p1", "level": 2, "message": "ERR_GOOGLE" },
+
+    { "id": "order.pick", "no": 9, "type": "action", "label": "Chọn món", "feature": "Bán hàng/Đặt hàng", "status": "done", "form": "form.menu", "data": ["order_items"], "code": ["src/ui/Menu.tsx"] },
+    { "id": "order.cart", "no": 10, "type": "result", "label": "Giỏ hàng", "note": "Lưu theo phiên", "feature": "Bán hàng/Đặt hàng", "status": "done" },
+    { "id": "order.checkout", "no": 11, "type": "action", "label": "Đặt hàng", "feature": "Bán hàng/Đặt hàng", "status": "done", "data": ["orders"] },
+
+    { "id": "pay.choose", "no": 12, "type": "action", "label": "Chọn cách trả", "feature": "Bán hàng/Thanh toán", "status": "done", "level": 3, "form": "form.checkout" },
+    { "id": "pay.wallet", "no": 13, "type": "action", "label": "Trừ ví", "feature": "Bán hàng/Thanh toán", "status": "done", "level": 3, "data": ["users", "orders"], "code": ["src/pay/wallet.ts"] },
+    { "id": "pay.card", "no": 14, "type": "action", "label": "Gọi cổng thanh toán", "note": "Timeout 30s", "feature": "Bán hàng/Thanh toán", "status": "review", "level": 3, "form": "form.checkout", "data": ["orders"], "code": ["src/pay/gateway.ts"], "rules": ["Timeout 30s → coi như lỗi"] },
+    { "id": "pay.paid", "no": 15, "type": "result", "label": "Đã trả", "note": "Tạo đơn mới", "feature": "Bán hàng/Thanh toán", "status": "done", "level": 3, "message": "MSG_PAID" },
+    { "id": "pay.failed", "no": 16, "type": "result", "label": "Thanh toán lỗi", "note": "Quay lại giỏ", "feature": "Bán hàng/Thanh toán", "status": "review", "level": 3, "message": "ERR_PAY_FAILED", "links": ["order.cart"] },
+
+    { "id": "admin.review", "no": 17, "type": "action", "label": "Duyệt đơn", "feature": "Bán hàng/Quản lý đơn", "status": "doing", "form": "form.admin-orders", "data": ["orders"] },
+    { "id": "admin.confirmed", "no": 18, "type": "result", "label": "Đơn xác nhận", "feature": "Bán hàng/Quản lý đơn", "status": "draft" },
+    { "id": "admin.rejected", "no": 19, "type": "result", "label": "Từ chối đơn", "note": "Hoàn tiền", "feature": "Bán hàng/Quản lý đơn", "status": "draft", "message": "MSG_REJECTED" },
+    { "id": "admin.notify", "no": 20, "type": "action", "label": "Gửi email", "feature": "Bán hàng/Quản lý đơn", "status": "draft" },
+    { "id": "admin.notified", "no": 21, "type": "result", "label": "Khách nhận thông báo", "feature": "Bán hàng/Quản lý đơn", "status": "draft" }
+  ],
+  "edges": [
+    { "from": "actor.customer", "to": "auth.enter-pass" },
+    { "from": "auth.enter-pass", "to": "auth.home", "when": "đúng" },
+    { "from": "auth.enter-pass", "to": "auth.error", "when": "sai, < 5 lần", "kind": "fail" },
+    { "from": "auth.enter-pass", "to": "auth.lock", "when": "sai, ≥ 5 lần", "kind": "fail" },
+    { "from": "actor.customer", "to": "auth.login-google" },
+    { "from": "auth.login-google", "to": "auth.home", "when": "token hợp lệ" },
+    { "from": "auth.login-google", "to": "auth.google-error", "when": "huỷ / lỗi", "kind": "fail" },
+    { "from": "auth.home", "to": "order.pick", "kind": "nav" },
+    { "from": "actor.customer", "to": "order.pick" },
+    { "from": "order.pick", "to": "order.cart" },
+    { "from": "order.cart", "to": "order.checkout", "kind": "nav" },
+    { "from": "order.checkout", "to": "pay.choose", "kind": "nav" },
+    { "from": "pay.choose", "to": "pay.wallet", "when": "ví", "kind": "nav" },
+    { "from": "pay.choose", "to": "pay.card", "when": "thẻ", "kind": "nav" },
+    { "from": "pay.wallet", "to": "pay.paid", "when": "đủ tiền" },
+    { "from": "pay.wallet", "to": "pay.failed", "when": "thiếu tiền", "kind": "fail" },
+    { "from": "pay.card", "to": "pay.paid", "when": "ok" },
+    { "from": "pay.card", "to": "pay.failed", "when": "từ chối / timeout", "kind": "fail" },
+    { "from": "actor.admin", "to": "admin.review" },
+    { "from": "pay.paid", "to": "admin.review", "kind": "nav" },
+    { "from": "admin.review", "to": "admin.confirmed", "when": "hợp lệ" },
+    { "from": "admin.review", "to": "admin.rejected", "when": "hết hàng", "kind": "fail" },
+    { "from": "admin.confirmed", "to": "admin.notify", "kind": "nav" },
+    { "from": "admin.notify", "to": "admin.notified" }
+  ],
+  "forms": [
+    { "id": "form.login", "label": "Đăng nhập", "status": "done", "fields": [
+      { "name": "email", "label": "Email", "type": "email", "required": true, "placeholder": "ban@email.com", "maps": "users.email",
+        "rules": [{ "rule": "đúng định dạng email", "msg": "ERR_EMAIL_FORMAT" }] },
+      { "name": "password", "label": "Mật khẩu", "type": "password", "required": true, "hint": "Có nút hiện/ẩn", "maps": "users.pass_hash",
+        "rules": [{ "rule": "tối thiểu 8 ký tự", "msg": "ERR_PASS_SHORT" }] },
+      { "name": "remember", "label": "Nhớ tôi", "type": "checkbox", "default": "bỏ chọn" }
+    ] },
+    { "id": "form.menu", "label": "Thực đơn", "status": "done", "fields": [
+      { "name": "qty", "label": "Số lượng", "type": "number", "required": true, "default": "1", "maps": "order_items.qty",
+        "rules": [{ "rule": "1 – 20", "msg": "ERR_QTY" }] },
+      { "name": "note", "label": "Ghi chú món", "type": "text", "placeholder": "Ít cay, không hành…", "maps": "order_items.note" }
+    ] },
+    { "id": "form.checkout", "label": "Thanh toán", "status": "review", "level": 3, "fields": [
+      { "name": "method", "label": "Cách trả", "type": "select", "required": true, "hint": "Ví · Thẻ", "maps": "orders.pay_method",
+        "rules": [{ "rule": "phải chọn", "msg": "ERR_PAY_METHOD" }] },
+      { "name": "card", "label": "Số thẻ", "type": "text", "required": true, "hint": "Chỉ hiện khi chọn Thẻ", "placeholder": "0000 0000 0000 0000",
+        "rules": [{ "rule": "16 chữ số", "msg": "ERR_CARD" }] }
+    ] },
+    { "id": "form.admin-orders", "label": "Duyệt đơn", "status": "draft", "fields": [
+      { "name": "reason", "label": "Lý do từ chối", "type": "text", "hint": "Bắt buộc khi từ chối", "maps": "orders.reject_reason",
+        "rules": [{ "rule": "bắt buộc khi từ chối", "msg": "ERR_REASON" }] }
+    ] }
+  ],
+  "entities": [
+    { "id": "users", "label": "Người dùng", "status": "done", "level": 2, "columns": [
+      { "name": "id", "type": "uuid", "key": "pk" },
+      { "name": "email", "type": "text", "required": true, "key": "unique" },
+      { "name": "pass_hash", "type": "text", "required": true, "note": "bcrypt" },
+      { "name": "failed_count", "type": "int", "required": true, "default": "0" },
+      { "name": "locked_until", "type": "timestamp", "note": "null = không khoá" },
+      { "name": "wallet", "type": "int", "required": true, "default": "0" }
+    ] },
+    { "id": "sessions", "label": "Phiên đăng nhập", "status": "done", "columns": [
+      { "name": "id", "type": "uuid", "key": "pk" },
+      { "name": "user_id", "type": "uuid", "required": true, "key": "fk", "ref": "users.id" },
+      { "name": "token", "type": "text", "required": true, "key": "unique" },
+      { "name": "expires_at", "type": "timestamp", "required": true }
+    ] },
+    { "id": "orders", "label": "Đơn hàng", "status": "doing", "level": 3, "columns": [
+      { "name": "id", "type": "uuid", "key": "pk" },
+      { "name": "user_id", "type": "uuid", "required": true, "key": "fk", "ref": "users.id", "index": true },
+      { "name": "status", "type": "text", "required": true, "default": "'pending'", "note": "pending · paid · confirmed · rejected", "index": true },
+      { "name": "total", "type": "int", "required": true },
+      { "name": "pay_method", "type": "text", "note": "wallet · card" },
+      { "name": "reject_reason", "type": "text" }
+    ] },
+    { "id": "order_items", "label": "Món trong đơn", "status": "done", "columns": [
+      { "name": "id", "type": "uuid", "key": "pk" },
+      { "name": "order_id", "type": "uuid", "required": true, "key": "fk", "ref": "orders.id" },
+      { "name": "name", "type": "text", "required": true },
+      { "name": "qty", "type": "int", "required": true },
+      { "name": "note", "type": "text" }
+    ] }
+  ],
+  "messages": {
+    "MSG_WELCOME": "Chào mừng bạn quay lại!",
+    "ERR_EMAIL_FORMAT": "Email không hợp lệ",
+    "ERR_PASS_SHORT": "Mật khẩu tối thiểu 8 ký tự",
+    "ERR_LOGIN_FAILED": "Email hoặc mật khẩu không đúng",
+    "ERR_LOCKED": "Tài khoản tạm khoá 15 phút do nhập sai nhiều lần",
+    "ERR_GOOGLE": "Không đăng nhập được bằng Google, vui lòng thử lại",
+    "ERR_QTY": "Số lượng từ 1 đến 20",
+    "ERR_PAY_METHOD": "Vui lòng chọn cách thanh toán",
+    "ERR_CARD": "Số thẻ gồm 16 chữ số",
+    "ERR_PAY_FAILED": "Thanh toán không thành công, vui lòng thử lại",
+    "MSG_PAID": "Đặt hàng thành công!",
+    "MSG_REJECTED": "Đơn đã bị từ chối, tiền sẽ được hoàn trong 24h",
+    "ERR_REASON": "Vui lòng nhập lý do từ chối"
+  }
+}
+</script>
+
+<script>
+(() => {
+  const G = JSON.parse(document.getElementById('graph').textContent);
+  G.forms ||= []; G.entities ||= []; G.messages ||= {};
+  const META = Object.assign({ title: 'GraphDocs', lang: 'en', level: 1 }, G.meta);
+
+  const I18N = {
+    vi: {
+      search: 'Tìm…', plan: 'Nháp', notFound: 'Không tìm thấy',
+      tabs: { flow: 'Luồng', forms: 'Form', data: 'Dữ liệu', messages: 'Message' },
+      type: { actor: 'Tác nhân', action: 'Hành động', result: 'Kết quả' },
+      status: { draft: 'nháp', doing: 'đang làm', review: 'chờ xác nhận', done: 'xong' },
+      kind: { ok: 'thành công', fail: 'thất bại', nav: 'chuyển tiếp' },
+      f: { type: 'Loại', feature: 'Feature', status: 'Trạng thái', level: 'Mức', plan: 'Plan', form: 'Form', data: 'Dữ liệu',
+           message: 'Message', rules: 'Quy tắc', code: 'Code', links: 'Liên kết', in: 'Đến từ', out: 'Dẫn tới' },
+      s: { field: 'Trường', ftype: 'Kiểu', rule: 'Ràng buộc → message', maps: 'Lưu vào', actions: 'Hành động dùng form:',
+           required: 'bắt buộc', placeholder: 'gợi ý nhập', def: 'mặc định', usedBy: 'Dùng bởi:', code: 'Mã', text: 'Nội dung' },
+    },
+    en: {
+      search: 'Search…', plan: 'Draft', notFound: 'Not found',
+      tabs: { flow: 'Flow', forms: 'Forms', data: 'Data', messages: 'Messages' },
+      type: { actor: 'Actor', action: 'Action', result: 'Result' },
+      status: { draft: 'draft', doing: 'doing', review: 'review', done: 'done' },
+      kind: { ok: 'success', fail: 'failure', nav: 'next step' },
+      f: { type: 'Type', feature: 'Feature', status: 'Status', level: 'Level', plan: 'Plan', form: 'Form', data: 'Data',
+           message: 'Message', rules: 'Rules', code: 'Code', links: 'Links', in: 'From', out: 'Leads to' },
+      s: { field: 'Field', ftype: 'Type', rule: 'Rule → message', maps: 'Stored in', actions: 'Actions using it:',
+           required: 'required', placeholder: 'placeholder', def: 'default', usedBy: 'Used by:', code: 'Code', text: 'Text' },
+    },
+  };
+  const T = I18N[META.lang] || I18N.en;
+
+  const KEY_ICON = { pk: '🔑', fk: '🔗', unique: '◆' };
+  const W = 240, VGAP = 16, GAP_MIN = 64;
+
+  const byId = new Map(G.nodes.map(n => [n.id, n]));
+  const formById = new Map(G.forms.map(s => [s.id, s]));
+  const entById = new Map(G.entities.map(e => [e.id, e]));
+  const statusOf = n => n.status || 'draft';
+  const levelOf = n => n.level || META.level;
+  // stable number for talking about a node ("#12"); the CLI assigns it, order is only a fallback
+  const noOf = n => n.no ?? G.nodes.indexOf(n) + 1;
+  const byNo = new Map(G.nodes.map(n => [String(noOf(n)), n.id]));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const badge = l => `<span class="lv lv${l}" title="${T.f.level} ${l}">${l}</span>`;
+  const go = (id, text) => `<span class="x" data-go="${esc(id)}">${text}</span>`;
+  const msgText = code => G.messages[code] != null
+    ? `<span class="msg">“${esc(G.messages[code])}”</span> <span class="code">${esc(code)}</span>`
+    : `<span class="code">${esc(code)} ?</span>`;
+
+  const msgRef = code => `<span class="x mc" data-go="${esc(code)}" title="${esc(G.messages[code] ?? '?')}">${esc(code)}</span>`;
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = '12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  const chipW = s => Math.ceil(ctx.measureText(s).width) + 20;
+
+  // ---------- generic layered layout ----------
+  // ids: items, links: [{from,to,when}], hs: measured heights. Columns = longest path; rows centered on neighbours.
+  function layout(ids, links, hs, width) {
+    const set = new Set(ids);
+    const edges = links.filter(e => set.has(e.from) && set.has(e.to));
+    const preds = new Map(ids.map(i => [i, []])), succs = new Map(ids.map(i => [i, []]));
+    for (const e of edges) { preds.get(e.to).push(e.from); succs.get(e.from).push(e.to); }
+
+    const rank = new Map(), visiting = new Set();
+    const rankOf = id => {
+      if (rank.has(id)) return rank.get(id);
+      if (visiting.has(id)) return 0;
+      visiting.add(id);
+      const r = Math.max(-1, ...preds.get(id).map(rankOf)) + 1;
+      visiting.delete(id); rank.set(id, r); return r;
+    };
+    ids.forEach(rankOf);
+
+    const cols = [];
+    ids.forEach(id => (cols[rank.get(id)] ||= []).push(id));
+    const cy = new Map();
+    const settle = col => {
+      col.sort((a, b) => cy.get(a) - cy.get(b));
+      for (let i = 1; i < col.length; i++) {
+        const min = cy.get(col[i - 1]) + hs.get(col[i - 1]) / 2 + VGAP + hs.get(col[i]) / 2;
+        cy.set(col[i], Math.max(cy.get(col[i]), min));
+      }
+    };
+    cols.forEach(col => { col.forEach(id => cy.set(id, 0)); settle(col); });
+    const avg = a => a.reduce((s, v) => s + cy.get(v), 0) / a.length;
+    for (let c = 1; c < cols.length; c++) { cols[c].forEach(id => preds.get(id).length && cy.set(id, avg(preds.get(id)))); settle(cols[c]); }
+    for (let c = cols.length - 2; c >= 0; c--) { cols[c].forEach(id => succs.get(id).length && cy.set(id, avg(succs.get(id)))); settle(cols[c]); }
+    const minY = Math.min(...ids.map(id => cy.get(id) - hs.get(id) / 2));
+
+    const x = [0];
+    for (let c = 1; c < cols.length; c++) {
+      const chips = edges.filter(e => rank.get(e.to) === c && e.when).map(e => chipW(e.when));
+      x[c] = x[c - 1] + width + Math.max(GAP_MIN, chips.length ? Math.max(...chips) + 56 : 0);
+    }
+    const pos = new Map(ids.map(id => [id, { x: x[rank.get(id)], y: cy.get(id) - hs.get(id) / 2 - minY, h: hs.get(id) }]));
+    return { pos, edges, width: x[x.length - 1] + width, height: Math.max(...[...pos.values()].map(p => p.y + p.h)) };
+  }
+
+  function place(canvas, sel, L) {
+    canvas.querySelectorAll(sel).forEach(el => { const p = L.pos.get(el.dataset.id); el.style.left = p.x + 'px'; el.style.top = p.y + 'px'; });
+    canvas.style.width = L.width + 'px';
+    canvas.style.height = L.height + 'px';
+  }
+  const measure = (canvas, sel) => new Map([...canvas.querySelectorAll(sel)].map(el => [el.dataset.id, el.offsetHeight]));
+
+  const markers = ['ok', 'fail', 'nav', 'actor'].map(k => {
+    const c = { ok: 'var(--accent)', fail: 'var(--fail)', nav: 'var(--nav)', actor: 'var(--actor-line)' }[k];
+    return `<marker id="m-${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="${c}"/></marker>`;
+  }).join('');
+  const STROKE = { ok: 'var(--accent)', fail: 'var(--fail)', nav: 'var(--nav)', actor: 'var(--actor-line)' };
+
+  function curve(x1, y1, x2, y2) { const mx = (x1 + x2) / 2; return `M${x1} ${y1} C${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`; }
+
+  // ================= FLOW =================
+  const sections = [];
+  const secOf = new Map();
+  for (const n of G.nodes) {
+    if (n.type === 'actor' || !n.feature) continue;
+    if (!secOf.has(n.feature)) {
+      const parts = n.feature.split('/').map(x => x.trim());
+      secOf.set(n.feature, { key: n.feature, name: parts.pop(), parent: parts.join(' › '), ids: [] });
+      sections.push(secOf.get(n.feature));
+    }
+    secOf.get(n.feature).ids.push(n.id);
+  }
+  for (const e of G.edges) {
+    const a = byId.get(e.from), b = byId.get(e.to);
+    if (a?.type === 'actor' && b?.feature) {
+      const s = secOf.get(b.feature);
+      if (!s.ids.includes(a.id)) s.ids.unshift(a.id);
+    }
+  }
+
+  // keep sub-features of the same parent together (stable, by first appearance of the parent)
+  const parentOrder = [...new Set(sections.map(s => s.parent))];
+  sections.sort((a, b) => parentOrder.indexOf(a.parent) - parentOrder.indexOf(b.parent));
+
+  const flowPane = document.getElementById('pane-flow');
+
+  function crossLinks(n, ids) {
+    const ref = (id, arrow) => `<span class="x" data-go="${esc(id)}" title="${esc(byId.get(id)?.label || id)}">${arrow} #${byId.has(id) ? noOf(byId.get(id)) : esc(id)}</span>`;
+    const out = G.edges.filter(e => e.from === n.id && !ids.has(e.to)).map(e => ref(e.to, '→'));
+    const inn = G.edges.filter(e => e.to === n.id && !ids.has(e.from) && byId.get(e.from)?.type !== 'actor').map(e => ref(e.from, '←'));
+    return [...inn, ...out].join('');
+  }
+
+  function nodeHtml(n, ids) {
+    const s = statusOf(n);
+    if (n.type === 'actor') {
+      return `<div class="node actor" data-id="${esc(n.id)}"><span class="av">👤</span><div><div class="t">${esc(n.label)} <span class="no">#${noOf(n)}</span></div></div></div>`;
+    }
+    // card = title + references only; notes, message text, form, data live in the detail panel
+    const refs = (n.message ? msgRef(n.message) : '') + crossLinks(n, ids);
+    return `<div class="node st ${n.type}" data-status="${s}" data-id="${esc(n.id)}"><div class="t"><span>${esc(n.label)}</span><span class="no">#${noOf(n)}</span></div>` +
+      (refs ? `<div class="lk">${refs}</div>` : '') + `</div>`;
+  }
+
+  function edgeSvg(e, pos, slot) {
+    const a = pos.get(e.from), b = pos.get(e.to);
+    const kind = byId.get(e.from).type === 'actor' ? 'actor' : (e.kind || 'ok');
+    const x1 = a.x + W, y1 = a.y + a.h / 2, x2 = b.x - 2, y2 = b.y + b.h / 2;
+    let d, chip = '';
+    if (e.when) {
+      // chips of edges sharing a target are stacked so they never overlap
+      const cy = y2 + (slot.i - (slot.n - 1) / 2) * 26;
+      const cw = chipW(e.when), cx = x2 - 36 - cw, ex = cx + cw;
+      d = `${curve(x1, y1, cx, cy)} M${ex} ${cy} C${ex + 18} ${cy}, ${x2 - 18} ${y2}, ${x2} ${y2}`;
+      chip = `<div class="chip ${kind}" data-e="${esc(e.from)}>${esc(e.to)}" style="left:${cx}px;top:${cy - 11}px">${esc(e.when)}</div>`;
+    } else {
+      d = curve(x1, y1, x2, y2);
+    }
+    const dash = kind === 'fail' ? ' stroke-dasharray="5 4"' : '';
+    const w = kind === 'actor' ? 1.2 : 1.6;
+    return { path: `<path data-e="${esc(e.from)}>${esc(e.to)}" d="${d}" fill="none" stroke="${STROKE[kind]}" stroke-width="${w}"${dash} marker-end="url(#m-${kind})"/>`, chip };
+  }
+
+  // two passes: render cards to measure their heights, then place cards and draw edges
+  function renderFlow() {
+    flowPane.innerHTML = `<svg width="0" height="0" style="position:absolute"><defs>${markers}</defs></svg>` + sections.map((sec, i) => {
+      const ids = new Set(sec.ids);
+      const head = sec.parent && sec.parent !== sections[i - 1]?.parent ? `<h2 class="grp">${esc(sec.parent)}</h2>` : '';
+      const members = sec.ids.map(id => byId.get(id)).filter(n => n.type !== 'actor');
+      const done = members.filter(n => statusOf(n) === 'done').length;
+      const lvl = Math.max(...members.map(levelOf));
+      return `${head}<details class="sec" open data-sec="${i}">
+        <summary><span class="caret"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>${esc(sec.name)}</h3>
+          ${badge(lvl)}<span class="meta">${done}/${members.length} ${T.status.done}</span></summary>
+        <div class="scroll"><div class="canvas">${sec.ids.map(id => nodeHtml(byId.get(id), ids)).join('')}</div></div></details>`;
+    }).join('');
+
+    sections.forEach((sec, i) => {
+      const canvas = flowPane.querySelector(`[data-sec="${i}"] .canvas`);
+      const L = layout(sec.ids, G.edges, measure(canvas, '.node'), W);
+      place(canvas, '.node', L);
+      const es = L.edges.map(e => {
+        const k = L.edges.filter(o => o.to === e.to && o.when);
+        return edgeSvg(e, L.pos, { i: k.indexOf(e), n: k.length });
+      });
+      canvas.insertAdjacentHTML('afterbegin', `<svg width="${L.width}" height="${L.height}">${es.map(x => x.path).join('')}</svg>${es.map(x => x.chip).join('')}`);
+    });
+    applyOverlay();
+  }
+
+  // hover a node → its flow; plan overlay
+  function flowOf(id) {
+    const keep = new Set([id]);
+    const walk = (cur, dir) => G.edges.forEach(e => {
+      const [s, t] = dir ? [e.from, e.to] : [e.to, e.from];
+      if (s === cur && !keep.has(t)) { keep.add(t); if (byId.get(t).type !== 'actor') walk(t, dir); }
+    });
+    walk(id, true); walk(id, false);
+    return keep;
+  }
+
+  function dimExcept(keep) {
+    flowPane.querySelectorAll('.node').forEach(el => el.classList.toggle('dim', !!keep && !keep.has(el.dataset.id)));
+    flowPane.querySelectorAll('[data-e]').forEach(el => {
+      const [a, b] = el.dataset.e.split('>');
+      el.classList.toggle('dim', !!keep && !(keep.has(a) && keep.has(b)));
+    });
+  }
+
+  let overlay = null, overlayKeep = null;
+  function applyOverlay() {
+    flowPane.querySelectorAll('.node').forEach(el => el.classList.remove('affected'));
+    overlayKeep = null;
+    if (overlay) {
+      const draft = new Set(G.nodes.filter(n => n.plan === overlay).map(n => n.id));
+      const affected = new Set();
+      G.edges.forEach(e => {
+        if (draft.has(e.from) && !draft.has(e.to)) affected.add(e.to);
+        if (draft.has(e.to) && !draft.has(e.from)) affected.add(e.from);
+      });
+      overlayKeep = new Set([...draft, ...affected]);
+      flowPane.querySelectorAll('.node').forEach(el => el.classList.toggle('affected', affected.has(el.dataset.id) && byId.get(el.dataset.id).type !== 'actor'));
+    }
+    dimExcept(overlayKeep);
+    renderPlans();
+  }
+
+  flowPane.addEventListener('mouseover', e => {
+    const el = e.target.closest('.node');
+    if (el && !overlay) dimExcept(flowOf(el.dataset.id));
+  });
+  flowPane.addEventListener('mouseout', e => {
+    if (e.target.closest('.node') && !e.relatedTarget?.closest?.('.node')) dimExcept(overlayKeep);
+  });
+
+  // ================= SCREENS =================
+  const formsPane = document.getElementById('pane-forms');
+  function renderForms() {
+    formsPane.innerHTML = `<div class="grid">${G.forms.filter(sc => sc.fields?.length).map(sc => {
+      const s = statusOf(sc);
+      const rows = (sc.fields || []).map(f => {
+        const extra = [
+          f.placeholder ? `${T.s.placeholder}: “${esc(f.placeholder)}”` : '',
+          f.default != null ? `${T.s.def}: ${esc(f.default)}` : '',
+          f.hint ? esc(f.hint) : '',
+        ].filter(Boolean).join(' · ');
+        const rules = (f.rules || []).map(r => `<span class="rule">${esc(r.rule)} → ${msgRef(r.msg)}</span>`).join('');
+        const [ent] = (f.maps || '').split('.');
+        return `<tr><td><b>${esc(f.label)}</b>${f.required ? ` <span class="req" title="${T.s.required}">✱</span>` : ''}
+            <div class="sub">${extra}</div></td>
+          <td><code>${esc(f.type)}</code></td>
+          <td>${rules || '<span class="sub">—</span>'}</td>
+          <td>${f.maps ? go(f.maps, `${esc(f.maps)}`) : (entById.has(ent) ? '' : '<span class="sub">—</span>')}</td></tr>`;
+      }).join('');
+      const acts = G.nodes.filter(n => n.form === sc.id).map(n => `<span class="btn st" data-status="${statusOf(n)}" data-go="${esc(n.id)}">${esc(n.label)} <span class="no">#${noOf(n)}</span></span>`).join('');
+      return `<div class="card st" data-status="${s}" data-id="${esc(sc.id)}">
+        <h3>${esc(sc.label)} ${badge(levelOf(sc))} <span class="code">${T.status[s]} · ${esc(sc.id)}</span></h3>
+        <table><tr><th>${T.s.field}</th><th>${T.s.ftype}</th><th>${T.s.rule}</th><th>${T.s.maps}</th></tr>${rows}</table>
+        ${acts ? `<div class="acts">${T.s.actions} ${acts}</div>` : ''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  // ================= DATA (ERD) =================
+  const dataPane = document.getElementById('pane-data');
+  const EW = 280;
+  function renderData() {
+    const rels = [];
+    for (const en of G.entities) for (const c of en.columns || []) {
+      if (c.key === 'fk' && c.ref) rels.push({ from: c.ref.split('.')[0], to: en.id, col: c.name, ref: c.ref });
+    }
+    const ents = G.entities.map(en => {
+      const s = statusOf(en);
+      const rows = (en.columns || []).map(c => {
+        const sub = [c.default != null ? `${T.s.def} ${esc(c.default)}` : '', c.index ? 'index' : '', c.note ? esc(c.note) : '',
+          c.ref ? `→ ${go(c.ref, esc(c.ref))}` : ''].filter(Boolean).join(' · ');
+        return `<div class="row" data-col="${esc(en.id)}.${esc(c.name)}"><span class="k" title="${esc(c.key || '')}">${KEY_ICON[c.key] || ''}</span>
+          <span>${esc(c.name)}${c.required ? ` <span class="req" title="${T.s.required}">✱</span>` : ''}</span><span class="ty">${esc(c.type)}</span>
+          ${sub ? `<span class="sub">${sub}</span>` : ''}</div>`;
+      }).join('');
+      const users = G.nodes.filter(n => (n.data || []).includes(en.id)).map(n => go(n.id, esc(n.label))).join(', ');
+      return `<div class="ent st" data-status="${s}" data-id="${esc(en.id)}">
+        <h3>${esc(en.id)} ${badge(levelOf(en))}</h3>
+        <div class="code" style="margin:-4px 12px 6px">${esc(en.label || '')} · ${T.status[s]}</div>
+        ${rows}${users ? `<div class="used">${T.s.usedBy} ${users}</div>` : ''}</div>`;
+    }).join('');
+    dataPane.innerHTML = `<div class="scroll"><div class="canvas" style="margin-top:8px">${ents}</div></div>`;
+
+    const canvas = dataPane.querySelector('.canvas');
+    const L = layout(G.entities.map(e => e.id), rels, measure(canvas, '.ent'), EW);
+    place(canvas, '.ent', L);
+    // FK line: from the referenced key row to the fk row
+    const rowY = key => { const r = canvas.querySelector(`.row[data-col="${CSS.escape(key)}"]`); return r ? r.parentElement.offsetTop + r.offsetTop + r.offsetHeight / 2 : 0; };
+    const paths = rels.map(r => {
+      const a = L.pos.get(r.from), b = L.pos.get(r.to);
+      const x1 = a.x + EW, x2 = b.x - 2, y1 = rowY(r.ref), y2 = rowY(`${r.to}.${r.col}`);
+      const mid = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+      return { p: `<path d="${curve(x1, y1, x2, y2)}" fill="none" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#m-ok)"/>`,
+        c: `<div class="chip" style="left:${mid.x - 14}px;top:${mid.y - 11}px">1:n</div>` };
+    });
+    canvas.insertAdjacentHTML('afterbegin', `<svg width="${L.width}" height="${L.height}"><defs>${markers}</defs>${paths.map(x => x.p).join('')}</svg>${paths.map(x => x.c).join('')}`);
+  }
+
+  // ================= MESSAGES =================
+  const msgPane = document.getElementById('pane-messages');
+  function renderMessages() {
+    const usedBy = code => [
+      ...G.nodes.filter(n => n.message === code).map(n => go(n.id, esc(n.label))),
+      ...G.forms.flatMap(sc => (sc.fields || []).filter(f => (f.rules || []).some(r => r.msg === code)).map(f => go(sc.id, `${esc(sc.label)} › ${esc(f.label)}`))),
+    ].join(', ');
+    msgPane.innerHTML = `<table class="msgs"><tr><th>${T.s.code}</th><th>${T.s.text}</th><th>${T.s.usedBy}</th></tr>${
+      Object.entries(G.messages).map(([k, v]) => `<tr data-id="${esc(k)}"><td><code>${esc(k)}</code></td><td class="msg">“${esc(v)}”</td><td>${usedBy(k) || '—'}</td></tr>`).join('')
+    }</table>`;
+  }
+
+  // ================= navigation =================
+  const TABS = ['flow', 'forms', 'data', 'messages'];
+  let tab = 'flow';
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = TABS.map(t => `<button data-tab="${t}">${T.tabs[t]}</button>`).join('');
+  function show(t) {
+    tab = t;
+    TABS.forEach(x => { document.getElementById('pane-' + x).hidden = x !== t; });
+    tabsEl.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+    document.getElementById('legend').style.visibility = t === 'flow' ? 'visible' : 'hidden';
+    document.getElementById('plans').style.display = t === 'flow' ? '' : 'none';
+  }
+  tabsEl.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
+
+  // resolve any id: node, form, entity (or entity.column), message code
+  function target(id) {
+    if (/^#?\d+$/.test(id) && byNo.has(id.replace('#', ''))) id = byNo.get(id.replace('#', ''));
+    if (byId.has(id)) return { id, tab: 'flow', sel: `.node[data-id="${CSS.escape(id)}"]` };
+    if (formById.has(id)) return { tab: 'forms', sel: `.card[data-id="${CSS.escape(id)}"]` };
+    if (entById.has(id)) return { tab: 'data', sel: `.ent[data-id="${CSS.escape(id)}"]` };
+    if (entById.has(id.split('.')[0])) return { tab: 'data', sel: `.row[data-col="${CSS.escape(id)}"]` };
+    if (id in G.messages) return { tab: 'messages', sel: `tr[data-id="${CSS.escape(id)}"]` };
+    return null;
+  }
+
+  function focusAny(id) {
+    const t = target(id);
+    if (!t) return toast(T.notFound);
+    show(t.tab);
+    const el = document.querySelector(`#pane-${t.tab} ${t.sel}`);
+    el.closest('details')?.setAttribute('open', '');
+    document.querySelectorAll('.focus').forEach(n => n.classList.remove('focus'));
+    el.classList.add('focus');
+    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+    if (t.tab === 'flow') showPanel(t.id); else panel.classList.remove('show');
+  }
+
+  document.getElementById('main').addEventListener('click', e => {
+    const g = e.target.closest('[data-go]');
+    if (g) { e.stopPropagation(); return focusAny(g.dataset.go); }
+    const el = e.target.closest('.node');
+    if (el) { document.querySelectorAll('.focus').forEach(n => n.classList.remove('focus')); el.classList.add('focus'); showPanel(el.dataset.id); }
+  });
+
+  // ---------- panel (flow nodes) ----------
+  const panel = document.getElementById('panel');
+  const body = document.getElementById('panel-body');
+  const link = id => `<a data-go="${esc(id)}">${esc(byId.get(id)?.label || id)}</a>`;
+  const list = (title, items) => items.length ? `<h3>${title}</h3><ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '';
+  const cond = e => [e.when, e.kind && e.kind !== 'ok' ? T.kind[e.kind] : ''].filter(Boolean).map(esc).join(', ');
+
+  function showPanel(id) {
+    const n = byId.get(id), s = statusOf(n);
+    const ins = G.edges.filter(e => e.to === id).map(e => link(e.from) + (cond(e) ? ` <small>[${cond(e)}]</small>` : ''));
+    const outs = G.edges.filter(e => e.from === id).map(e => (cond(e) ? `<small>[${cond(e)}]</small> ` : '') + link(e.to));
+    body.innerHTML = `
+      <h2>${n.type === 'actor' ? '👤 ' : ''}${esc(n.label)} <span class="no">#${noOf(n)}</span></h2>
+      ${n.note ? `<p style="margin:0 0 10px;color:var(--muted)">${esc(n.note)}</p>` : ''}
+      <dl>
+        <dt>${T.f.type}</dt><dd>${T.type[n.type] || n.type}</dd>
+        ${n.feature ? `<dt>${T.f.feature}</dt><dd>${esc(n.feature.split('/').join(' › '))}</dd>` : ''}
+        ${n.type !== 'actor' ? `<dt>${T.f.status}</dt><dd><span class="st sw" data-status="${s}"></span>${T.status[s]}</dd><dt>${T.f.level}</dt><dd>${badge(levelOf(n))}</dd>` : ''}
+        ${n.plan ? `<dt>${T.f.plan}</dt><dd>${esc(n.plan)}</dd>` : ''}
+        ${n.form ? `<dt>${T.f.form}</dt><dd>${go(n.form, esc(formById.get(n.form)?.label || n.form))}</dd>` : ''}
+        ${n.data?.length ? `<dt>${T.f.data}</dt><dd>${n.data.map(d => go(d, esc(d))).join(', ')}</dd>` : ''}
+        ${n.message ? `<dt>${T.f.message}</dt><dd>${msgText(n.message)}</dd>` : ''}
+        <dt>ID</dt><dd><code>${esc(n.id)}</code></dd>
+      </dl>
+      ${list(T.f.rules, (n.rules || []).map(esc))}
+      ${list(T.f.code, (n.code || []).map(c => `<code>${esc(c)}</code>`))}
+      ${list(T.f.links, (n.links || []).filter(l => byId.has(l)).map(link))}
+      ${list(T.f.in, ins)}
+      ${list(T.f.out, outs)}`;
+    panel.classList.add('show');
+  }
+  body.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) focusAny(g.dataset.go); });
+  document.getElementById('close').onclick = () => { panel.classList.remove('show'); document.querySelectorAll('.focus').forEach(n => n.classList.remove('focus')); };
+
+  // ---------- header ----------
+  const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').toLowerCase();
+  const search = document.getElementById('search');
+  search.placeholder = T.search;
+  search.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || !search.value.trim()) return;
+    const q = fold(search.value.trim());
+    if (/^#?\d+$/.test(q) && target(q)) return focusAny(q);
+    const hit = [...G.nodes, ...G.forms, ...G.entities].find(n => fold(n.label || '').includes(q) || fold(n.id).includes(q))
+      || Object.keys(G.messages).find(k => fold(k).includes(q) || fold(G.messages[k]).includes(q));
+    hit ? focusAny(hit.id || hit) : toast(T.notFound);
+  });
+
+  const plans = [...new Set(G.nodes.filter(n => n.plan).map(n => n.plan))];
+  const plansEl = document.getElementById('plans');
+  function renderPlans() {
+    plansEl.innerHTML = plans.map(p => `<button data-plan="${esc(p)}" class="${overlay === p ? 'on' : ''}">✎ ${T.plan} ${esc(p)}</button>`).join(' ');
+  }
+  plansEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-plan]');
+    if (!b) return;
+    overlay = overlay === b.dataset.plan ? null : b.dataset.plan;
+    applyOverlay();
+    if (overlay) {
+      const first = flowPane.querySelector(`.node[data-id="${CSS.escape(G.nodes.find(n => n.plan === overlay).id)}"]`);
+      first.closest('details').open = true;
+      first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
+
+  document.getElementById('legend').innerHTML =
+    `<span><i></i>${T.kind.ok}</span><span><i class="fail"></i>${T.kind.fail}</span><span><i class="nav"></i>${T.kind.nav}</span>` +
+    ['draft', 'doing', 'review', 'done'].map(s => `<span><b style="background:var(--s-${s}-bg);border-color:var(--s-${s}-bd)"></b>${T.status[s]}</span>`).join('');
+
+  const toastEl = document.getElementById('toast');
+  function toast(msg) { toastEl.textContent = msg; toastEl.style.display = 'block'; setTimeout(() => { toastEl.style.display = 'none'; }, 1500); }
+
+  // ---------- boot: lay out every pane while visible, then show flow ----------
+  document.documentElement.lang = META.lang;
+  document.title = document.getElementById('title').textContent = META.title;
+  document.documentElement.style.setProperty('--hh', document.querySelector('header').offsetHeight + 'px');
+  show('flow'); renderFlow();
+  renderForms(); renderMessages();
+  show('data'); renderData();
+  show('flow');
+  const openHash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (!id) return;
+    const nid = byNo.get(id.replace('#', '')) || id;
+    if (byId.get(nid)?.plan) { overlay = byId.get(nid).plan; applyOverlay(); }
+    focusAny(id);
+  };
+  window.addEventListener('hashchange', openHash);
+  openHash();
+})();
+</script>
+</body>
+</html>

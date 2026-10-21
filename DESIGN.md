@@ -39,18 +39,31 @@ Nodes are fine-grained (an action, never a whole feature).
 | Field | Meaning |
 |---|---|
 | `id` | Feature slug, unique: `auth.login-google` |
+| `no` | Stable number shown as `#12`, for talking about a node. The CLI assigns it incrementally and never reuses one. Search and deep links accept it |
 | `type` | `actor` · `action` · `result` |
 | `label` | Short name |
-| `feature` | Path: `Sales/Order/Payment`, which drives color and collapsing |
+| `note` | Optional one-line subtitle shown on the card |
+| `feature` | Path: `Sales/Order/Payment`. Each feature is one section |
 | `status` | See below |
 | `code` | File/symbol links: `src/api/auth.ts#login` |
 | `rules` | Only constraints that can't be drawn as an edge (1–2 lines) |
 | `links` | Cross-links to nodes in other features |
+| `level` | Detail level the node was planned at (default: `meta.level`) |
 | `plan` | Draft plan id, while not yet merged |
+| `form` | Action only: the form it submits (`form.login`) |
+| `data` | Action only: entities it reads/writes (`["users", "sessions"]`) |
+| `message` | Result only: message code shown to the user (`ERR_LOGIN_FAILED`) |
 
 ### Edges
 
-`from → to`, with an optional `when` condition. **Business rules live on the edges.**
+`from → to`, with an optional `when` condition and `kind`. **Business rules live on the edges.**
+
+| `kind` | Line |
+|---|---|
+| `ok` (default) | solid, accent |
+| `fail` | dashed, muted |
+| `nav` | solid, gray: moves on to the next step |
+| (from an actor) | thin, gray |
 
 ```
 👤 User ─▶ ⚙ Enter email/pass ─[correct]──────▶ ◎ Dashboard
@@ -58,17 +71,59 @@ Nodes are fine-grained (an action, never a whole feature).
                               └─[wrong, ≥ 5]──▶ ◎ Lock 15 min
 ```
 
-### Hierarchy = semantic zoom
+### Sections (no zoom)
 
-- No group nodes. Parent/child is read from edge direction.
-- Zoom out: nodes sharing a feature collapse into one node labeled with that feature.
-- Same feature means same color.
+- No group nodes, no zoom. **One section per feature**, which can be collapsed.
+- The parent path is written **once** as a group heading. Each sub-feature is a soft rounded block under it, titled with its own name only, so there is no repeated prefix. (A left menu was tried and dropped: little value.)
+- An actor appears in every section where it acts.
+- An edge to another feature is not drawn. The card shows a link instead (`→ Pick item`, `← Home`) that jumps to it.
 
 ```
-Zoom in : 👤 Customer ─▶ 🟦Pick item ─▶ 🟦Cart ─▶ 🟩Pay ─[wallet]─▶ 🟩Paid
-Zoom 1  : 👤 Customer ─▶ 🟦[Pick items] ─▶ 🟩[Payment]
-Zoom 2  : 👤 Customer ─▶ 🟪[Order]
+ACCOUNT
+╭ ▾ Login  2 · 3/6 done ─────────────────────────────╮
+│ 👤 Customer ─▶ Enter email/pass ─(correct)─▶ Home  │
+╰────────────────────────────────────────────────────╯
+SALES
+╭ ▸ Order  1 · 3/3 done  (collapsed) ────────────────╮
+╭ ▾ Payment  3 · 3/5 done ───────────────────────────╮
 ```
+
+### Forms, data, messages
+
+The flow alone isn't enough to build from. Three more parts, linked to the flow, give the full spec:
+
+| Part | Holds | Linked from |
+|---|---|---|
+| `forms` | Per form: fields, plus the actions that use it (taken from nodes with that `form`) | action `form` |
+| `entities` | DB tables: columns, keys, relations (ERD) | action `data`, field `maps` |
+| `messages` | Central table: code → text, in `meta.lang` | result `message`, field rule `msg` |
+
+**Only forms**, meaning screens with input or validation. Pure UI is not documented here; it lives in the design, elsewhere. A form with no fields is not shown.
+
+**Field** (in a form):
+
+| Attr | Example |
+|---|---|
+| `name`, `label`, `type` | `email`, "Email", `email` (text · email · password · number · date · select · checkbox · file…) |
+| `required` | `true` |
+| `rules` | `[{ "rule": "min 8", "msg": "ERR_PASS_SHORT" }]` |
+| `maps` | `users.email` |
+| `placeholder`, `default`, `hint` | "you@mail.com" |
+
+**Column** (in an entity): `name`, `type`, `required`, `key` (`pk` · `fk` · `unique`), `ref` (for `fk`: `users.id`). Extra detail depends on the level: level 2 adds `default` and `note`, level 3 adds `index`.
+
+```json
+"forms":    [{ "id": "form.login", "label": "Login", "fields": [
+  { "name": "email", "label": "Email", "type": "email", "required": true,
+    "rules": [{ "rule": "email", "msg": "ERR_EMAIL_FORMAT" }], "maps": "users.email" } ] }],
+"entities": [{ "id": "users", "label": "Users", "columns": [
+  { "name": "id", "type": "uuid", "key": "pk" },
+  { "name": "email", "type": "text", "required": true, "key": "unique" } ] }],
+"messages": { "ERR_LOGIN_FAILED": "Wrong email or password" }
+```
+
+- Forms and entities have `status` and `plan` like nodes. A plan drafts its form/DB changes too.
+- The viewer resolves message codes, so text shows inline (code in small print).
 
 ### Status
 
@@ -78,21 +133,23 @@ draft ─▶ doing ─▶ review ─▶ done
 
 | Status | Display | Router's next step |
 |---|---|---|
-| `draft` | dashed border | build |
-| `doing` | solid border + ◐ | resume build |
-| `review` | solid border + ⏳ | remind the user of the report |
-| `done` | bold border + ✓ | none |
+| `draft` | light gray, dashed border | build |
+| `doing` | light blue | resume build |
+| `review` | light amber | remind the user of the report |
+| `done` | light green | none |
+
+Status is shown **by background color only** (no icons). It is the only thing that colors a node, form or entity.
 
 ### Detail levels
 
 | Level | Covers | Login example |
 |---|---|---|
-| ① Simple | Main flow only | login → dashboard |
-| ② Medium | + common errors | + wrong password |
-| ③ Full | + every edge case | + lockout, locked account, offline, session expiry |
+| 1 Simple | Main flow only | login → dashboard |
+| 2 Medium | + common errors | + wrong password |
+| 3 Full | + every edge case | + lockout, locked account, offline, session expiry |
 
-- The project default is set at init. A plan can override it ("this plan at ③").
-- Each branch shows a level badge, so a sparse area reads as "not detailed", not "no errors".
+- The project default is set at init. A plan can override it ("this plan at level 3").
+- Each section shows a colored level badge, so a sparse area reads as "not detailed", not "no errors".
 
 ## 4. Workflow
 
@@ -112,7 +169,7 @@ draft ─▶ doing ─▶ review ─▶ done
    └─ changes reqs   ─▶ PLAN (1–2 questions) ─▶ update draft
 ```
 
-- **Init:** brainstorm, then a skeleton graph at the overview zoom. Asks for the docs language (`en` / `vi`), the default level, and the test command (detected, then confirmed).
+- **Init:** brainstorm, then a skeleton graph: main flows only, at the default level. Asks for the docs language (`en` / `vi`), the default level, and the test command (detected, then confirmed).
 - **Plan:** the draft attaches to its parent node in the main graph. Answering the brainstorm counts as approving the requirements.
 - **Build:** writes tests per conditional branch, at the plan's level. Updates status and code links as it goes.
 - **Report format:**
@@ -129,14 +186,20 @@ draft ─▶ doing ─▶ review ─▶ done
 
 | Aspect | Decision |
 |---|---|
-| Layout | Left → right (actor → action → result) |
-| Zoom | Scroll zooms the whole graph; click a collapsed node to expand only it |
-| Color | Fill = feature |
-| Status | Border style + small corner icon |
-| Details | Click → side panel (rules, code, cross-links, level). Hover shows the full name only |
-| Draft / impact | Overlay on the main graph: draft dashed, affected nodes orange border, rest dimmed |
-| Deep link | `#<node-id>` opens the overlay focused on that node (used by reports) |
-| Tools | Node search only (no filters, no minimap) |
+| Tech | Plain HTML + inline SVG. **No libraries**. Thin, flat scrollbars |
+| Tabs | **Flow** · **Form** (one spec card per form) · **Data** (ERD: table cards + FK lines) · **Messages** (code → text) |
+| Cross-links | Panel of an action → its form + entities; result card → message text; field → column. All clickable across tabs |
+| Layout | Per section, left → right. Column = longest path from the start. Rows are centered on their neighbours |
+| Node | **Minimal card: title + `#no` + references only** (message code, `→ #12` to another feature). Note, message text, form, data, rules, code all go to the detail panel. Message text shows as a tooltip on the code. **Full text, never truncated**: cards wrap and grow, and layout uses their real height. Actor = pill with avatar |
+| Level | Colored number badge: green 1 · amber 2 · red 3 (section header + panel) |
+| Edge | Smooth curve. Condition = pill chip near the target. Line style by `kind` |
+| Sections | Parent feature = group heading (once). Sub-feature = card in 2 parts: header (chevron, name, level badge, done count) and flow, split by a dashed line. Collapsed shows the header only |
+| Hover | Highlights the flow through the node, dims the rest |
+| Details | Click → side panel (rules, code, links, level, from / leads to) |
+| Draft / impact | Plan button: draft + affected nodes (orange ring) stay, rest dimmed |
+| Deep link | `#<node-id>` opens the section, scrolls to the node, opens the panel (used by reports) |
+| Tools | Node search only |
+| Reference | Style follows the "Đăng nhập & Đăng ký" design the user shared |
 
 ## 6. Output: `.graphdocs/` in the user's project
 
@@ -144,14 +207,15 @@ draft ─▶ doing ─▶ review ─▶ done
 .graphdocs/
 ├─ index.html    viewer + graph JSON in <script id="graph" type="application/json">  ← source of truth
 ├─ graph.md      generated for agents, never edited by hand
-├─ config.json   { "lang": "vi", "level": 1, "test": "npm test" }
-└─ lib/          cytoscape, elk (vendored, works offline over file://)
+└─ config.json   { "lang": "vi", "level": 1, "test": "npm test" }
 ```
 
-- Data is embedded because `file://` blocks `fetch()` of sibling JSON.
-- `graph.md` is an edge list per feature, with status and code link:
+- A single self-contained file that works offline. Data is embedded because `file://` blocks `fetch()` of sibling JSON.
+- Graph JSON = `{ meta: { title, lang, level }, nodes, edges, forms, entities, messages }`. The CLI copies `meta` from config, since the viewer can't read `config.json`.
+- Prototype: `viewer/index.html` (sample data embedded).
+- `graph.md` is an edge list per feature (status, code link, form, data, message), followed by compact Forms, Entities and Messages tables:
   ```
-  ## Auth (level ①)
+  ## Auth (level 1)
   - 👤user → ⚙auth.login                      ✓ src/api/auth.ts
   - ⚙auth.login →[correct]→ ◎auth.dashboard   ✓
   - ⚙auth.login →[wrong]→ ◎auth.error         ◐
@@ -171,7 +235,7 @@ graphdocs/
 │  └─ gd-report/    each step ends with "next: …"
 ├─ scripts/gd.js    CLI, the only way to modify the graph
 ├─ hooks/
-└─ viewer/          index.html template + lib
+└─ viewer/          index.html template (no dependencies)
 ```
 
 ### CLI (`node scripts/gd.js …`)
