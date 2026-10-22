@@ -174,7 +174,7 @@ Status is shown **by background color only** (no icons). It is the only thing th
 
 - **Init:** brainstorm, then a skeleton graph: main flows only, at the default level. Asks the docs language (`en` / `vi`) first and speaks it from then on; then the default level. The test command is never asked: detected from the code, or picked by build.
 - **Plan:** id `p-<slug>`, drawn with one `gd apply` (new and changed items get `plan` + `draft`). Answering the questions counts as approving the requirements; build starts right away.
-- **Build:** `status doing plan:<id>`, code, `code=` links on nodes, one test per conditional branch at the plan's level, then `status review plan:<id>`.
+- **Build:** `status doing plan:<id>`, code, `code=` links on nodes, unit tests per conditional branch at the plan's level, plus an `agent-browser` integration test of the main flow when the plan has a form or UI (if `agent-browser` is missing: detect the OS, offer the install as a choice), then `status review plan:<id>`.
 - **Report format:**
   ```
   ✅ Login Google: 4 nodes, 3 files

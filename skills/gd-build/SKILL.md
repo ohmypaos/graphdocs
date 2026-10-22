@@ -22,7 +22,17 @@ Rules from the **graphdocs** skill apply. Runs **without stopping** until tests 
 
 ## 3. Test
 
-- One test per conditional branch of the plan (each edge with `when`), plus form validation rules.
+- **Unit tests (always):** one per conditional branch of the plan (each edge with `when`), plus form validation rules. API / logic tests call the handler or endpoint directly.
+- **Integration test (only if the plan has a form or UI):** drive the real app with `agent-browser` through the plan's main flow (open → fill the form → submit → check the result/message). Start the dev server yourself. Level 3 also covers the `fail` edges.
+- **`agent-browser` missing** (`command -v agent-browser`): detect the OS (`uname -s`) and offer the install by AskUserQuestion, then run it plus `agent-browser install` (downloads Chrome):
+
+| OS | Options (first = Recommended) |
+|---|---|
+| macOS | `brew install agent-browser` · `npm install -g agent-browser` · skip |
+| Linux | `npm install -g agent-browser` then `agent-browser install --with-deps` · `cargo install agent-browser` · skip |
+| Windows | `npm install -g agent-browser` · `cargo install agent-browser` · skip |
+
+  Skip → no integration test; say so in the report's "Try by hand" line.
 - Run `config.json` → `test`. Unset (e.g. new project) → never ask: use the standard runner of the code's language, installing/configuring it if missing.
 - Fail → fix → rerun. **Max 3 attempts.**
 - Still failing → stop and report in 3 lines: what fails, suspected cause, then AskUserQuestion with 2–3 ways forward (recommendation first).
