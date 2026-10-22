@@ -59,7 +59,7 @@ Invoke the target skill and follow it. Each step skill ends by naming the next o
 - Read `.graphdocs/graph.md` to understand the project, never the HTML.
 - **Brief.** No prose pages. Labels a few words, reports 3–5 lines.
 - **Detail level** (`config.json` → `level`, or the plan's own): 1 main flow only · 2 + common errors · 3 + every edge case. Never go beyond it.
-- **Questions:** one at a time with AskUserQuestion, multiple choice, first option = recommendation, labeled "(Recommended)", with a one-line reason. **Make the user type as little as possible:** always offer concrete options you inferred (from the repo, the message, common practice), use multiSelect for lists, never ask an open question. Typing = the automatic "Other" only.
+- **Questions:** one at a time with AskUserQuestion, multiple choice, first option = recommendation, labeled "(Recommended)", with a one-line reason. **Make the user type as little as possible:** always offer concrete options you inferred (from the repo, the message, common practice), use multiSelect for lists, never ask an open question. Typing = the automatic "Other" only. **Proofread every question and option before showing it:** no broken characters (`�`, mojibake), full correct diacritics in `vi`, no stray symbols; rewrite it if anything looks off.
 - Docs text (labels, notes, messages) **and your replies to the user** in `config.json` → `lang`.
 - **Every reply ends with an AskUserQuestion** whose options are the next actions (recommended first). Never a free-text question or a bare "tell me…". All user input is a choice.
 - **Commits:** never add `Co-Authored-By` or any attribution / "generated with" line.

@@ -19,7 +19,7 @@
 3. **Minimal but sufficient.** No prose. Labels are a few words, details are 1–3 lines.
 4. **User sets the detail level.** The agent never goes beyond it.
 5. **Two touchpoints only:** the plan brainstorm and confirming the report. Everything else runs on its own.
-6. **Questions:** one at a time, multiple choice (multiSelect for lists), one option recommended with a short reason. Options are inferred, never blank: the user types as little as possible.
+6. **Questions:** one at a time, multiple choice (multiSelect for lists), one option recommended with a short reason. Options are inferred, never blank: the user types as little as possible. The agent proofreads question text first (no garbled characters, correct diacritics).
 7. **HTML is view-only.** All feedback goes through chat.
 8. **Replies in `config.lang`, ending with a next action.** Every reply ends with an AskUserQuestion of next actions (recommended first). All user input is a choice.
 
