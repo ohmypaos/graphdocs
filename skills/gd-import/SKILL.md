@@ -10,8 +10,8 @@ Document **what the code does today**. Never invent or "fix" behavior here; chan
 
 ## 1. Init (only if `.graphdocs/` is missing)
 
-- Infer the title from the repo (package.json, README…). Detect the test command.
-- Ask docs language first (`vi`/`en`); from then on speak to the user in it. Then default level (1 Recommended) and test command (confirm the detected one).
+- Infer the title from the repo (package.json, README…). Detect the test command silently; not found → omit `--test`. Never ask.
+- Ask docs language first (`vi`/`en`); from then on speak to the user in it. Then default level (1 Recommended).
 - `gd init --title "…" --lang … --level … --test "…"`. No skeleton.
 
 ## 2. Scan

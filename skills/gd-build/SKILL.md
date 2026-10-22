@@ -23,7 +23,7 @@ Rules from the **graphdocs** skill apply. Runs **without stopping** until tests 
 ## 3. Test
 
 - One test per conditional branch of the plan (each edge with `when`), plus form validation rules.
-- Run `config.json` → `test`.
+- Run `config.json` → `test`. Unset (e.g. new project) → never ask: use the standard runner of the code's language, installing/configuring it if missing.
 - Fail → fix → rerun. **Max 3 attempts.**
 - Still failing → stop and report in 3 lines: what fails, suspected cause, then AskUserQuestion with 2–3 ways forward (recommendation first).
 

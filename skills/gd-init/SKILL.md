@@ -19,13 +19,14 @@ Then ask only what you can't infer from the repo or the user's message:
 2. Main actors: multiSelect of likely actors for that idea (User, Admin, Guest…).
 3. Main features (3–7): multiSelect of the typical features for that idea, grouped by parent if natural: `Account/Login`. Offer more in a second call only if needed.
 4. Default detail level: 1 simple (Recommended for solo/small) · 2 medium · 3 full.
-5. Test command: detect first (`package.json` scripts.test, pytest, go test, cargo test…), ask to confirm.
 
 ## 2. Create
 
 ```
 gd init --title "<name>" --lang <vi|en> --level <1-3> --test "<cmd>"
 ```
+
+`<cmd>`: never ask. Detect from the code (`package.json` scripts.test, pytest, go test, cargo test…); none found (normal for a new project) → omit `--test`, still never ask; gd-build picks the standard runner.
 
 ## 3. Skeleton graph
 
