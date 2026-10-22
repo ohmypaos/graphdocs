@@ -11,14 +11,15 @@ If the repo already has app code, use **gd-import** instead.
 
 ## 1. Brainstorm (one question at a time, AskUserQuestion, recommendation first)
 
-Ask only what you can't infer from the repo or the user's message:
+**Language first, always:** `vi` · `en` (recommend the language the user writes in). From the answer on, speak to the user in that language (questions, replies) and write the docs in it too.
 
-1. Project name + one-line idea.
-2. Main actors (who uses it).
-3. Main features (3–7), grouped by parent if natural: `Account/Login`.
+Then ask only what you can't infer from the repo or the user's message:
+
+1. Project name + idea: options = guesses from the folder name / README / the user's message (not blank).
+2. Main actors: multiSelect of likely actors for that idea (User, Admin, Guest…).
+3. Main features (3–7): multiSelect of the typical features for that idea, grouped by parent if natural: `Account/Login`. Offer more in a second call only if needed.
 4. Default detail level: 1 simple (Recommended for solo/small) · 2 medium · 3 full.
-5. Docs language: `vi` · `en` (recommend the language the user writes in).
-6. Test command: detect first (`package.json` scripts.test, pytest, go test, cargo test…), ask to confirm.
+5. Test command: detect first (`package.json` scripts.test, pytest, go test, cargo test…), ask to confirm.
 
 ## 2. Create
 
@@ -40,4 +41,4 @@ Then `gd check` until clean.
 ## 4. End
 
 Tell the user in 2 lines: skeleton ready + `.graphdocs/index.html` to open.
-**Next:** wait for the first request → **gd-plan**.
+Then AskUserQuestion "Build which first?": options = the skeleton's features (first = recommended), plus "Later".

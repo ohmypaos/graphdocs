@@ -16,8 +16,8 @@ Exactly this shape, in `config.json` → `lang`:
 🧪 Tests: <passed>/<total>
 👆 Try by hand: <the one thing tests can't prove, or "nothing">
 🗺 .graphdocs/index.html#<no of the plan's first node>
-→ "ok" to make it official
 ```
+Then AskUserQuestion: ok, make it official (Recommended) · small fix · change the flow · drop it.
 
 ## 2. The user answers
 
@@ -36,4 +36,4 @@ Import plans (`p-import-…`, from gd-import): feedback = fix the graph only, ne
 - Message from the plan: `feat(<feature>): <what>` (or fix/refactor). Import plans: `docs(graphdocs): import <features>`, `.graphdocs/` only.
 - **No `Co-Authored-By`, no attribution, no "generated with" line.**
 
-Confirm in 1 line. **Next:** wait for the next request → **gd-plan**.
+Confirm in 1 line, then AskUserQuestion "Next?": options = the next backlog features (first = recommended), "Document existing code" (gd-import), "Later".

@@ -19,8 +19,9 @@
 3. **Minimal but sufficient.** No prose. Labels are a few words, details are 1–3 lines.
 4. **User sets the detail level.** The agent never goes beyond it.
 5. **Two touchpoints only:** the plan brainstorm and confirming the report. Everything else runs on its own.
-6. **Questions:** one at a time, multiple choice, one option recommended with a short reason.
+6. **Questions:** one at a time, multiple choice (multiSelect for lists), one option recommended with a short reason. Options are inferred, never blank: the user types as little as possible.
 7. **HTML is view-only.** All feedback goes through chat.
+8. **Replies in `config.lang`, ending with a next action.** Every reply ends with an AskUserQuestion of next actions (recommended first). All user input is a choice.
 
 ## 3. Data model
 
@@ -171,7 +172,7 @@ Status is shown **by background color only** (no icons). It is the only thing th
    └─ drop           ─▶ gd discard (+ git revert of its code)
 ```
 
-- **Init:** brainstorm, then a skeleton graph: main flows only, at the default level. Asks for the docs language (`en` / `vi`), the default level, and the test command (detected, then confirmed).
+- **Init:** brainstorm, then a skeleton graph: main flows only, at the default level. Asks the docs language (`en` / `vi`) first and speaks it from then on; then the default level and the test command (detected, then confirmed).
 - **Plan:** id `p-<slug>`, drawn with one `gd apply` (new and changed items get `plan` + `draft`). Answering the questions counts as approving the requirements; build starts right away.
 - **Build:** `status doing plan:<id>`, code, `code=` links on nodes, one test per conditional branch at the plan's level, then `status review plan:<id>`.
 - **Report format:**
@@ -180,7 +181,7 @@ Status is shown **by background color only** (no icons). It is the only thing th
   🧪 Tests: 6/6 pass
   👆 Try by hand: "Sign in with Google" button on mobile
   🗺 .graphdocs/index.html#7
-  → 'ok' to make it official
+  Then a choice: ok, make it official · small fix · change the flow · drop it
   ```
 - **Commit after "ok":** one commit with code + `.graphdocs/`, message derived from the plan (`feat(...)`; imports: `docs(graphdocs): import …`, `.graphdocs/` only). **No `Co-Authored-By` or any attribution trailer.**
 - Each step skill ends by **invoking** the next one (plan → build → report); the router picks the step from `gd state`.
