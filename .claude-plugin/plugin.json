@@ -1,6 +1,6 @@
 {
   "name": "graphdocs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Project docs as one visual graph (HTML). Plan → build → report workflow where the graph leads the code.",
   "author": {
     "name": "Paos"
