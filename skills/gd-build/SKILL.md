@@ -18,7 +18,7 @@ Rules from the **graphdocs** skill apply. Runs **without stopping** until tests 
 - Code exactly what the graph says: actions, every branch (`when`), forms with their validation, entity changes, message texts by code.
 - Nothing beyond the plan's level. No extra edge cases.
 - Link code as you go: `gd node set <id> code=src/api/auth.ts#login`.
-- If the plan turns out wrong or impossible: **stop**, update the draft with `gd`, ask the user (one question, recommendation first). Never silently build something else.
+- If the plan turns out wrong or impossible: **stop**, update the draft with `gd`, AskUserQuestion with 2–3 options (recommendation first). Never silently build something else.
 
 ## 3. Test
 

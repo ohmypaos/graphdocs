@@ -15,7 +15,7 @@ Rules from the **graphdocs** skill apply.
 ## 2. Clarify (the only time the user is asked before the report)
 
 - Ask only questions whose answer changes the graph. Usually 1–4. Skip what is obvious.
-- One at a time, AskUserQuestion, first option "(Recommended)" + one-line reason.
+- One at a time, AskUserQuestion, first option "(Recommended)" + one-line reason. Options inferred from the graph / code / common practice; never an open question.
 - Do not ask about edge cases beyond the level.
 
 ## 3. Draft
